@@ -80,22 +80,8 @@ var Auth = (function() {
         locale: 'ja',
         width: 300
       });
-      // Also try One Tap prompt with detailed error reporting
-      google.accounts.id.prompt(function(notification) {
-        if (notification.isNotDisplayed()) {
-          var reason = notification.getNotDisplayedReason();
-          console.log('One Tap not displayed: ' + reason);
-          if (reason === 'opt_out_or_no_session') {
-            showError('Googleアカウントにログインしていないか、One Tapがオフです。ボタンをタップしてください。');
-          } else if (reason === 'suppressed_by_user') {
-            showError('前回キャンセルしたため一時停止中です。ボタンをタップしてください。');
-          } else {
-            showError('ログイン表示不可: ' + reason + '。ボタンをタップしてください。');
-          }
-        } else if (notification.isSkippedMoment()) {
-          console.log('One Tap skipped: ' + notification.getSkippedReason());
-        }
-      });
+      // Try One Tap prompt (silent - no error shown to user)
+      google.accounts.id.prompt();
     } else {
       setTimeout(function() { renderButton(el); }, 200);
     }
