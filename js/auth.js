@@ -15,12 +15,20 @@ var Auth = (function() {
       } catch(e) { localStorage.removeItem('minpaku_token'); }
     }
 
+    initGIS();
+  }
+
+  function initGIS() {
     if (typeof google !== 'undefined' && google.accounts) {
       google.accounts.id.initialize({
         client_id: AppConfig.GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
         auto_select: !!idToken
       });
+      var el = document.getElementById('google-signin-btn');
+      if (el) renderButton(el);
+    } else {
+      setTimeout(initGIS, 200);
     }
   }
 
@@ -33,6 +41,8 @@ var Auth = (function() {
         locale: 'ja',
         width: 280
       });
+    } else {
+      setTimeout(function() { renderButton(el); }, 200);
     }
   }
 
