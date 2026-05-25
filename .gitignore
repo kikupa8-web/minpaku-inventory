@@ -1,5 +1,10 @@
 # GAS backend (not deployed to GitHub Pages)
 Code.gs
+appsscript.json
+
+# Clasp config
+.clasp.json
+.claspignore
 
 # Documentation (optional - keep if you want it on GitHub)
 # README.md
