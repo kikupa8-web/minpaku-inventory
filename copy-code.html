@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Code.gs コピー用</title>
+<style>
+body{font-family:sans-serif;margin:20px;background:#f5f5f5}
+h2{color:#2d5016}
+button{background:#2d5016;color:white;border:none;padding:15px 40px;font-size:18px;border-radius:8px;cursor:pointer;margin:10px 0}
+button:hover{background:#3d7020}
+textarea{width:100%;height:400px;font-family:monospace;font-size:11px;padding:10px;border:1px solid #ccc;border-radius:4px}
+.ok{color:green;font-size:20px;font-weight:bold;display:none}
+</style>
+</head><body>
+<h2>Code.gs - Apps Scriptに貼り付けるコード</h2>
+<p>1. 下の「コードをコピー」ボタンを押す<br>2. Apps Scriptタブに切り替える<br>3. 既存コードを全選択(Ctrl+A) → 貼り付け(Ctrl+V)</p>
+<button onclick="copyCode()">コードをコピー</button>
+<span class="ok" id="ok-msg">コピーしました!</span>
+<br><br>
+<textarea id="code" readonly></textarea>
+<script>
+var code = "";
+fetch("Code.gs").then(r=>r.text()).then(t=>{code=t;document.getElementById("code").value=t}).catch(()=>{
+  document.getElementById("code").value="ファイルの読み込みに失敗しました";
+});
+function copyCode(){
+  var ta=document.getElementById("code");
+  ta.select();
+  document.execCommand("copy");
+  navigator.clipboard.writeText(ta.value).catch(()=>{});
+  document.getElementById("ok-msg").style.display="inline";
+}
+</script>
+</body></html>
