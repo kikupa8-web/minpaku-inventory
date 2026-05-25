@@ -18,18 +18,57 @@ var Auth = (function() {
     initGIS();
   }
 
+  var gisRetry = 0;
   function initGIS() {
     if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.initialize({
-        client_id: AppConfig.GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-        auto_select: !!idToken
-      });
-      var el = document.getElementById('google-signin-btn');
-      if (el) renderButton(el);
+      try {
+        google.accounts.id.initialize({
+          client_id: AppConfig.GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: !!idToken
+        });
+        var el = document.getElementById('google-signin-btn');
+        if (el) renderButton(el);
+        // Also show manual button as fallback
+        setTimeout(showManualButton, 2000);
+      } catch(e) {
+        showError('GIS初期化エラー: ' + e.message);
+        showManualButton();
+      }
     } else {
-      setTimeout(initGIS, 200);
+      gisRetry++;
+      if (gisRetry < 50) {
+        setTimeout(initGIS, 200);
+      } else {
+        showError('Googleログインの読み込みに失敗しました。ページを再読み込みしてください。');
+        showManualButton();
+      }
     }
+  }
+
+  function showManualButton() {
+    var btn = document.getElementById('manual-signin-btn');
+    var gsiBtn = document.getElementById('google-signin-btn');
+    // If GIS button has no children (didn't render), show manual button
+    if (btn && gsiBtn && gsiBtn.children.length === 0) {
+      btn.style.display = 'block';
+      btn.onclick = function() {
+        if (typeof google !== 'undefined' && google.accounts) {
+          google.accounts.id.prompt(function(notification) {
+            if (notification.isNotDisplayed()) {
+              showError('ポップアップがブロックされました。ブラウザの設定を確認してください。理由: ' + notification.getNotDisplayedReason());
+            }
+          });
+        } else {
+          showError('Googleログインが読み込まれていません。ページを再読み込みしてください。');
+        }
+      };
+    }
+  }
+
+  function showError(msg) {
+    var el = document.getElementById('login-error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
   }
 
   function renderButton(el) {
