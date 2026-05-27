@@ -268,6 +268,37 @@ var App = (function() {
     });
   }
 
+  // ============ 物件への品目追加 ============
+  function showAddStockForm() {
+    document.getElementById('stock-add-form').style.display = 'block';
+  }
+  function hideAddStockForm() {
+    document.getElementById('stock-add-form').style.display = 'none';
+  }
+  function addStockRecord() {
+    var itemId = document.getElementById('stock-add-item').value;
+    if (!itemId) { UI.showToast('品目を選択してください', 'error'); return; }
+    var pid = Store.getSelectedPropertyId();
+    var minimum = document.getElementById('stock-add-min').value;
+    var initial = document.getElementById('stock-add-initial').value;
+
+    UI.showLoading();
+    Api.addStockRecord({
+      propertyId: pid,
+      itemId: itemId,
+      minimum: minimum,
+      initial: initial
+    }).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) {
+        UI.showToast('品目を物件に追加しました', 'success');
+        refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+
   // ============ 品目管理 ============
   function showEditItem(itemId) {
     document.getElementById('item-edit-' + itemId).style.display = 'block';
@@ -390,6 +421,8 @@ var App = (function() {
   return {
     init: init, onLoginSuccess: onLoginSuccess, refreshData: refreshData,
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
+    showAddStockForm: showAddStockForm, hideAddStockForm: hideAddStockForm,
+    addStockRecord: addStockRecord,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
     deleteProperty: deleteProperty,

@@ -168,27 +168,73 @@ var UI = (function() {
     var cat = Store.getSelectedCategory();
     if (cat !== 'all') stocks = stocks.filter(function(s) { return s.category === cat; });
 
-    if (stocks.length === 0) {
-      container.innerHTML = '<div class="empty-msg">この物件の在庫データがありません</div>';
-      return;
-    }
+    var user = Auth.getUser();
+    var isAdmin = user && user.role === 'admin';
 
     var html = '';
-    stocks.forEach(function(s) {
-      var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
-      html += '<div class="stock-row ' + rowClass + '" data-pid="' + s.propertyId + '" data-iid="' + s.itemId + '">'
-        + '<div class="stock-info">'
-        + '<div class="stock-name">' + esc(s.itemName) + '</div>'
-        + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
+
+    if (stocks.length === 0) {
+      html += '<div class="empty-msg">この物件の在庫データがありません</div>';
+    } else {
+      stocks.forEach(function(s) {
+        var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
+        html += '<div class="stock-row ' + rowClass + '" data-pid="' + s.propertyId + '" data-iid="' + s.itemId + '">'
+          + '<div class="stock-info">'
+          + '<div class="stock-name">' + esc(s.itemName) + '</div>'
+          + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
+          + '</div>'
+          + '<div class="stock-controls">'
+          + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
+          + '<span class="stock-value">' + s.current + '</span>'
+          + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
+          + '</div>'
+          + '</div>';
+      });
+    }
+
+    // 管理者のみ：品目追加・削除ボタン
+    if (isAdmin) {
+      var pid = Store.getSelectedPropertyId();
+      html += '<div id="stock-add-area" class="stock-add-area">'
+        + '<button class="action-btn stock-add-btn" onclick="App.showAddStockForm()">＋ この物件に品目を追加</button>'
+        + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
+        + '<div class="form-group"><label>品目を選択</label><select id="stock-add-item" class="property-select"></select></div>'
+        + '<div class="form-group"><label>最低数（これを下回るとアラート）</label><input type="number" id="stock-add-min" value="5" min="0"></div>'
+        + '<div class="form-group"><label>初期在庫数</label><input type="number" id="stock-add-initial" value="0" min="0"></div>'
+        + '<div class="mgmt-edit-buttons">'
+        + '<button class="action-btn" onclick="App.addStockRecord()">追加</button>'
+        + '<button class="action-btn action-btn-cancel" onclick="App.hideAddStockForm()">キャンセル</button>'
         + '</div>'
-        + '<div class="stock-controls">'
-        + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
-        + '<span class="stock-value">' + s.current + '</span>'
-        + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
         + '</div>'
         + '</div>';
-    });
+    }
+
     container.innerHTML = html;
+
+    // 品目セレクトボックスを埋める（未登録品目のみ）
+    if (isAdmin) {
+      var sel = document.getElementById('stock-add-item');
+      if (sel) {
+        var pid = Store.getSelectedPropertyId();
+        var existingItemIds = {};
+        stocks.forEach(function(s) { existingItemIds[s.itemId] = true; });
+        // フィルタなし全在庫から既存品目を取得
+        Store.getStocksForProperty(pid).forEach(function(s) { existingItemIds[s.itemId] = true; });
+        var allItems = Store.getItems();
+        var available = allItems.filter(function(it) { return !existingItemIds[it.itemId]; });
+        if (available.length === 0) {
+          sel.innerHTML = '<option value="">すべての品目が登録済みです</option>';
+        } else {
+          sel.innerHTML = '';
+          available.forEach(function(it) {
+            var opt = document.createElement('option');
+            opt.value = it.itemId;
+            opt.textContent = it.name + '（' + it.category + '）';
+            sel.appendChild(opt);
+          });
+        }
+      }
+    }
   }
 
   // ============================================================

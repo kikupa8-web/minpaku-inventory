@@ -61,6 +61,8 @@ var Api = (function() {
   function addItem(data) { return callAPI('addItem', data); }
   function editItem(data) { return callAPI('editItem', data); }
   function deleteItem(itemId) { return callAPI('deleteItem', { itemId: itemId }); }
+  function addStockRecord(data) { return callAPI('addStockRecord', data); }
+  function removeStockRecord(propertyId, itemId) { return callAPI('removeStockRecord', { propertyId: propertyId, itemId: itemId }); }
   function addPermission(data) { return callAPI('addPermission', data); }
   function editPermission(data) { return callAPI('editPermission', data); }
   function deletePermission(email) { return callAPI('deletePermission', { email: email }); }
@@ -119,6 +121,7 @@ var Api = (function() {
     getInitialData: getInitialData, updateStock: updateStock, setStock: setStock,
     addProperty: addProperty, editProperty: editProperty, deleteProperty: deleteProperty,
     addItem: addItem, editItem: editItem, deleteItem: deleteItem,
+    addStockRecord: addStockRecord, removeStockRecord: removeStockRecord,
     addPermission: addPermission, editPermission: editPermission, deletePermission: deletePermission,
     getShortageList: getShortageList,
     getLogs: getLogs, processPendingQueue: processPendingQueue, getPendingCount: getPendingCount
