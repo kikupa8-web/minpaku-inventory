@@ -344,6 +344,47 @@ body {
 .action-btn:active { transform: scale(0.98); }
 
 /* ============================================================
+   物件管理カード
+   ============================================================ */
+.settings-empty { color: var(--color-text-light); font-size: 14px; text-align: center; padding: 16px 0; }
+
+.prop-card {
+  background: var(--color-bg); border-radius: var(--radius);
+  padding: 12px; margin-bottom: 8px;
+  border: 1px solid var(--color-border);
+}
+.prop-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.prop-card-name { font-size: 16px; font-weight: 600; color: var(--color-primary); }
+.prop-card-actions { display: flex; gap: 4px; }
+.prop-btn {
+  width: 36px; height: 36px; border: 1px solid var(--color-border);
+  border-radius: var(--radius); background: var(--color-white);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.prop-btn:active { transform: scale(0.93); }
+.prop-btn-delete:hover { background: #fde8e8; border-color: #e8a0a0; }
+.prop-btn-edit:hover { background: #e8f0fd; border-color: #a0bce8; }
+
+.prop-card-details { font-size: 13px; color: var(--color-text-light); }
+.prop-detail { padding: 2px 0; }
+
+.prop-card-edit {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+.prop-edit-buttons { display: flex; gap: 8px; margin-top: 8px; }
+
+.action-btn-cancel {
+  background: #999; color: #fff;
+}
+.action-btn-cancel:hover { background: #777; }
+
+/* ============================================================
    PC対応
    ============================================================ */
 @media (min-width: 641px) {

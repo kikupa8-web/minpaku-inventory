@@ -204,6 +204,70 @@ var App = (function() {
     });
   }
 
+  function showEditProperty(propertyId) {
+    var editPanel = document.getElementById('prop-edit-' + propertyId);
+    var details = editPanel.previousElementSibling;
+    if (editPanel) {
+      editPanel.style.display = 'block';
+      details.style.display = 'none';
+    }
+  }
+
+  function cancelEditProperty(propertyId) {
+    var editPanel = document.getElementById('prop-edit-' + propertyId);
+    var details = editPanel.previousElementSibling;
+    if (editPanel) {
+      editPanel.style.display = 'none';
+      details.style.display = 'block';
+    }
+  }
+
+  function saveEditProperty(propertyId) {
+    var name = document.getElementById('edit-name-' + propertyId).value.trim();
+    if (!name) { UI.showToast('物件名を入力してください', 'error'); return; }
+
+    UI.showLoading();
+    Api.editProperty({
+      propertyId: propertyId,
+      name: name,
+      location: document.getElementById('edit-location-' + propertyId).value.trim(),
+      rooms: document.getElementById('edit-rooms-' + propertyId).value,
+      manager: document.getElementById('edit-manager-' + propertyId).value.trim(),
+      notifyEmail: document.getElementById('edit-email-' + propertyId).value.trim()
+    }).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) {
+        UI.showToast('物件を更新しました', 'success');
+        refreshData();
+        setTimeout(function() { UI.switchTab('settings'); }, 500);
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.hideLoading();
+      UI.showToast('通信エラーです', 'error');
+    });
+  }
+
+  function deleteProperty(propertyId, propertyName) {
+    if (!confirm('「' + propertyName + '」を削除しますか？\n\nこの物件の在庫データもすべて削除されます。')) return;
+
+    UI.showLoading();
+    Api.deleteProperty(propertyId).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) {
+        UI.showToast('物件を削除しました', 'success');
+        refreshData();
+        setTimeout(function() { UI.switchTab('settings'); }, 500);
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.hideLoading();
+      UI.showToast('通信エラーです', 'error');
+    });
+  }
+
   function addItem() {
     var name = document.getElementById('new-item-name').value.trim();
     if (!name) { UI.showToast('品目名を入力してください', 'error'); return; }
@@ -240,7 +304,9 @@ var App = (function() {
   return {
     init: init, onLoginSuccess: onLoginSuccess, refreshData: refreshData,
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
-    addProperty: addProperty, addItem: addItem
+    addProperty: addProperty, showEditProperty: showEditProperty,
+    cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
+    deleteProperty: deleteProperty, addItem: addItem
   };
 })();
 

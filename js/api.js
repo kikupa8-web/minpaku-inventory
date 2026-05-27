@@ -56,6 +56,8 @@ var Api = (function() {
   }
 
   function addProperty(data) { return callAPI('addProperty', data); }
+  function editProperty(data) { return callAPI('editProperty', data); }
+  function deleteProperty(propertyId) { return callAPI('deleteProperty', { propertyId: propertyId }); }
   function addItem(data) { return callAPI('addItem', data); }
   function getShortageList() { return callAPI('getShortageList'); }
   function getLogs(limit) { return callAPI('getLogs', { limit: limit || 100 }); }
@@ -110,7 +112,8 @@ var Api = (function() {
 
   return {
     getInitialData: getInitialData, updateStock: updateStock, setStock: setStock,
-    addProperty: addProperty, addItem: addItem, getShortageList: getShortageList,
+    addProperty: addProperty, editProperty: editProperty, deleteProperty: deleteProperty,
+    addItem: addItem, getShortageList: getShortageList,
     getLogs: getLogs, processPendingQueue: processPendingQueue, getPendingCount: getPendingCount
   };
 })();

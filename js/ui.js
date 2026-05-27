@@ -316,8 +316,49 @@ var UI = (function() {
   // ============================================================
   function renderSettingsTab() {
     var container = document.getElementById('content-settings');
+    var properties = Store.getProperties();
+
+    // 登録済み物件一覧
     var html = '<div class="settings-section">'
-      + '<h3>物件を追加</h3>'
+      + '<h3>📋 登録済み物件</h3>';
+
+    if (properties.length === 0) {
+      html += '<p class="settings-empty">物件がまだ登録されていません</p>';
+    } else {
+      properties.forEach(function(p) {
+        html += '<div class="prop-card" id="prop-card-' + p.propertyId + '">'
+          + '<div class="prop-card-header">'
+          + '<div class="prop-card-name">' + esc(p.name) + '</div>'
+          + '<div class="prop-card-actions">'
+          + '<button class="prop-btn prop-btn-edit" onclick="App.showEditProperty(\'' + p.propertyId + '\')" title="編集">✏️</button>'
+          + '<button class="prop-btn prop-btn-delete" onclick="App.deleteProperty(\'' + p.propertyId + '\',\'' + esc(p.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+          + '</div>'
+          + '</div>'
+          + '<div class="prop-card-details">'
+          + '<div class="prop-detail">📍 ' + esc(p.location || '未設定') + '</div>'
+          + '<div class="prop-detail">🛏️ ' + (p.rooms || 0) + '部屋</div>'
+          + '<div class="prop-detail">👤 ' + esc(p.manager || '未設定') + '</div>'
+          + '<div class="prop-detail">📧 ' + esc(p.notifyEmail || '未設定') + '</div>'
+          + '</div>'
+          + '<div class="prop-card-edit" id="prop-edit-' + p.propertyId + '" style="display:none;">'
+          + '<div class="form-group"><label>物件名</label><input type="text" id="edit-name-' + p.propertyId + '" value="' + esc(p.name) + '"></div>'
+          + '<div class="form-group"><label>所在地</label><input type="text" id="edit-location-' + p.propertyId + '" value="' + esc(p.location || '') + '"></div>'
+          + '<div class="form-group"><label>部屋数</label><input type="number" id="edit-rooms-' + p.propertyId + '" value="' + (p.rooms || 1) + '" min="1"></div>'
+          + '<div class="form-group"><label>担当者</label><input type="text" id="edit-manager-' + p.propertyId + '" value="' + esc(p.manager || '') + '"></div>'
+          + '<div class="form-group"><label>通知メール</label><input type="email" id="edit-email-' + p.propertyId + '" value="' + esc(p.notifyEmail || '') + '"></div>'
+          + '<div class="prop-edit-buttons">'
+          + '<button class="action-btn" onclick="App.saveEditProperty(\'' + p.propertyId + '\')">保存</button>'
+          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditProperty(\'' + p.propertyId + '\')">キャンセル</button>'
+          + '</div>'
+          + '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+
+    // 物件追加フォーム
+    html += '<div class="settings-section">'
+      + '<h3>➕ 物件を追加</h3>'
       + '<div class="form-group"><label>物件名</label><input type="text" id="new-prop-name" placeholder="例: 高松ゲストハウス"></div>'
       + '<div class="form-group"><label>所在地</label><input type="text" id="new-prop-location" placeholder="例: 香川県高松市"></div>'
       + '<div class="form-group"><label>部屋数</label><input type="number" id="new-prop-rooms" value="1" min="1"></div>'
@@ -326,8 +367,9 @@ var UI = (function() {
       + '<button class="action-btn" onclick="App.addProperty()">物件を追加</button>'
       + '</div>';
 
+    // 品目追加
     html += '<div class="settings-section">'
-      + '<h3>品目を追加</h3>'
+      + '<h3>➕ 品目を追加</h3>'
       + '<div class="form-group"><label>品目名</label><input type="text" id="new-item-name" placeholder="例: ハンドソープ"></div>'
       + '<div class="form-group"><label>カテゴリ</label><select id="new-item-category">'
       + '<option>アメニティ</option><option>消耗品</option><option>リネン</option><option>備品</option></select></div>'
@@ -340,7 +382,7 @@ var UI = (function() {
       + '</div>';
 
     html += '<div class="settings-section">'
-      + '<h3>権限マスタ</h3>'
+      + '<h3>👥 権限マスタ</h3>'
       + '<p>スタッフの追加・削除はGoogle スプレッドシートの「権限マスタ」シートを直接編集してください。</p>'
       + '</div>';
 
