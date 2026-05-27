@@ -344,40 +344,48 @@ body {
 .action-btn:active { transform: scale(0.98); }
 
 /* ============================================================
-   物件管理カード
+   管理カード（物件・品目・スタッフ共通）
    ============================================================ */
 .settings-empty { color: var(--color-text-light); font-size: 14px; text-align: center; padding: 16px 0; }
 
-.prop-card {
+.mgmt-card {
   background: var(--color-bg); border-radius: var(--radius);
   padding: 12px; margin-bottom: 8px;
   border: 1px solid var(--color-border);
 }
-.prop-card-header {
+.mgmt-card-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-.prop-card-name { font-size: 16px; font-weight: 600; color: var(--color-primary); }
-.prop-card-actions { display: flex; gap: 4px; }
-.prop-btn {
+.mgmt-card-name { font-size: 15px; font-weight: 600; color: var(--color-primary); flex: 1; min-width: 0; }
+.mgmt-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.mgmt-btn {
   width: 36px; height: 36px; border: 1px solid var(--color-border);
   border-radius: var(--radius); background: var(--color-white);
   font-size: 16px; cursor: pointer; display: flex;
   align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.prop-btn:active { transform: scale(0.93); }
-.prop-btn-delete:hover { background: #fde8e8; border-color: #e8a0a0; }
-.prop-btn-edit:hover { background: #e8f0fd; border-color: #a0bce8; }
+.mgmt-btn:active { transform: scale(0.93); }
+.mgmt-btn-delete:hover { background: #fde8e8; border-color: #e8a0a0; }
+.mgmt-btn-edit:hover { background: #e8f0fd; border-color: #a0bce8; }
 
-.prop-card-details { font-size: 13px; color: var(--color-text-light); }
-.prop-detail { padding: 2px 0; }
+.mgmt-card-details { font-size: 13px; color: var(--color-text-light); }
+.mgmt-detail { padding: 2px 0; }
 
-.prop-card-edit {
+.mgmt-badge {
+  font-size: 11px; padding: 1px 8px; border-radius: 10px;
+  background: rgba(0,0,0,0.07); color: var(--color-text-light);
+  font-weight: 400; vertical-align: middle; margin-left: 4px;
+}
+.mgmt-badge-admin { background: #e8f0fd; color: #2c5f8a; }
+.mgmt-badge-inactive { background: #fde8e8; color: #c0392b; }
+
+.mgmt-card-edit {
   margin-top: 10px; padding-top: 10px;
   border-top: 1px solid var(--color-border);
 }
-.prop-edit-buttons { display: flex; gap: 8px; margin-top: 8px; }
+.mgmt-edit-buttons { display: flex; gap: 8px; margin-top: 8px; }
 
 .action-btn-cancel {
   background: #999; color: #fff;

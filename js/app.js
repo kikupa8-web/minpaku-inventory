@@ -268,6 +268,91 @@ var App = (function() {
     });
   }
 
+  // ============ 品目管理 ============
+  function showEditItem(itemId) {
+    document.getElementById('item-edit-' + itemId).style.display = 'block';
+    document.getElementById('item-details-' + itemId).style.display = 'none';
+  }
+  function cancelEditItem(itemId) {
+    document.getElementById('item-edit-' + itemId).style.display = 'none';
+    document.getElementById('item-details-' + itemId).style.display = 'block';
+  }
+  function saveEditItem(itemId) {
+    var name = document.getElementById('edit-item-name-' + itemId).value.trim();
+    if (!name) { UI.showToast('品目名を入力してください', 'error'); return; }
+    UI.showLoading();
+    Api.editItem({
+      itemId: itemId,
+      name: name,
+      category: document.getElementById('edit-item-cat-' + itemId).value,
+      unit: document.getElementById('edit-item-unit-' + itemId).value.trim(),
+      orderQty: document.getElementById('edit-item-oq-' + itemId).value,
+      price: document.getElementById('edit-item-price-' + itemId).value,
+      supplier: document.getElementById('edit-item-sup-' + itemId).value.trim(),
+      supplierUrl: document.getElementById('edit-item-url-' + itemId).value.trim(),
+      note: document.getElementById('edit-item-note-' + itemId).value.trim()
+    }).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('品目を更新しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+  function deleteItem(itemId, itemName) {
+    if (!confirm('「' + itemName + '」を削除しますか？\n\nこの品目の在庫データもすべて削除されます。')) return;
+    UI.showLoading();
+    Api.deleteItem(itemId).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('品目を削除しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+
+  // ============ スタッフ管理 ============
+  function showEditPerm(email) {
+    document.getElementById('perm-edit-' + email).style.display = 'block';
+    document.getElementById('perm-details-' + email).style.display = 'none';
+  }
+  function cancelEditPerm(email) {
+    document.getElementById('perm-edit-' + email).style.display = 'none';
+    document.getElementById('perm-details-' + email).style.display = 'block';
+  }
+  function saveEditPerm(email) {
+    UI.showLoading();
+    Api.editPermission({
+      email: email,
+      displayName: document.getElementById('edit-perm-name-' + email).value.trim(),
+      role: document.getElementById('edit-perm-role-' + email).value,
+      active: document.getElementById('edit-perm-active-' + email).value === 'true'
+    }).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('スタッフ情報を更新しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+  function deletePerm(email, name) {
+    if (!confirm('「' + name + '」を削除しますか？\n\nこのスタッフはログインできなくなります。')) return;
+    UI.showLoading();
+    Api.deletePermission(email).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('スタッフを削除しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+  function addPermission() {
+    var email = document.getElementById('new-perm-email').value.trim();
+    if (!email) { UI.showToast('メールアドレスを入力してください', 'error'); return; }
+    UI.showLoading();
+    Api.addPermission({
+      email: email,
+      displayName: document.getElementById('new-perm-name').value.trim(),
+      role: document.getElementById('new-perm-role').value
+    }).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('スタッフを追加しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+
   function addItem() {
     var name = document.getElementById('new-item-name').value.trim();
     if (!name) { UI.showToast('品目名を入力してください', 'error'); return; }
@@ -307,7 +392,12 @@ var App = (function() {
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
-    deleteProperty: deleteProperty, addItem: addItem
+    deleteProperty: deleteProperty,
+    showEditItem: showEditItem, cancelEditItem: cancelEditItem,
+    saveEditItem: saveEditItem, deleteItem: deleteItem,
+    showEditPerm: showEditPerm, cancelEditPerm: cancelEditPerm,
+    saveEditPerm: saveEditPerm, deletePerm: deletePerm, addPermission: addPermission,
+    addItem: addItem
   };
 })();
 

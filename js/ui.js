@@ -317,46 +317,43 @@ var UI = (function() {
   function renderSettingsTab() {
     var container = document.getElementById('content-settings');
     var properties = Store.getProperties();
+    var items = Store.getItems();
+    var permissions = Store.getPermissions();
 
-    // 登録済み物件一覧
+    // ========== 登録済み物件一覧 ==========
     var html = '<div class="settings-section">'
       + '<h3>📋 登録済み物件</h3>';
-
     if (properties.length === 0) {
       html += '<p class="settings-empty">物件がまだ登録されていません</p>';
     } else {
       properties.forEach(function(p) {
-        html += '<div class="prop-card" id="prop-card-' + p.propertyId + '">'
-          + '<div class="prop-card-header">'
-          + '<div class="prop-card-name">' + esc(p.name) + '</div>'
-          + '<div class="prop-card-actions">'
-          + '<button class="prop-btn prop-btn-edit" onclick="App.showEditProperty(\'' + p.propertyId + '\')" title="編集">✏️</button>'
-          + '<button class="prop-btn prop-btn-delete" onclick="App.deleteProperty(\'' + p.propertyId + '\',\'' + esc(p.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+        html += '<div class="mgmt-card" id="prop-card-' + p.propertyId + '">'
+          + '<div class="mgmt-card-header">'
+          + '<div class="mgmt-card-name">' + esc(p.name) + '</div>'
+          + '<div class="mgmt-card-actions">'
+          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditProperty(\'' + p.propertyId + '\')" title="編集">✏️</button>'
+          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteProperty(\'' + p.propertyId + '\',\'' + esc(p.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+          + '</div></div>'
+          + '<div class="mgmt-card-details" id="prop-details-' + p.propertyId + '">'
+          + '<div class="mgmt-detail">📍 ' + esc(p.location || '未設定') + '</div>'
+          + '<div class="mgmt-detail">🛏️ ' + (p.rooms || 0) + '部屋　👤 ' + esc(p.manager || '未設定') + '</div>'
+          + '<div class="mgmt-detail">📧 ' + esc(p.notifyEmail || '未設定') + '</div>'
           + '</div>'
-          + '</div>'
-          + '<div class="prop-card-details">'
-          + '<div class="prop-detail">📍 ' + esc(p.location || '未設定') + '</div>'
-          + '<div class="prop-detail">🛏️ ' + (p.rooms || 0) + '部屋</div>'
-          + '<div class="prop-detail">👤 ' + esc(p.manager || '未設定') + '</div>'
-          + '<div class="prop-detail">📧 ' + esc(p.notifyEmail || '未設定') + '</div>'
-          + '</div>'
-          + '<div class="prop-card-edit" id="prop-edit-' + p.propertyId + '" style="display:none;">'
+          + '<div class="mgmt-card-edit" id="prop-edit-' + p.propertyId + '" style="display:none;">'
           + '<div class="form-group"><label>物件名</label><input type="text" id="edit-name-' + p.propertyId + '" value="' + esc(p.name) + '"></div>'
           + '<div class="form-group"><label>所在地</label><input type="text" id="edit-location-' + p.propertyId + '" value="' + esc(p.location || '') + '"></div>'
           + '<div class="form-group"><label>部屋数</label><input type="number" id="edit-rooms-' + p.propertyId + '" value="' + (p.rooms || 1) + '" min="1"></div>'
           + '<div class="form-group"><label>担当者</label><input type="text" id="edit-manager-' + p.propertyId + '" value="' + esc(p.manager || '') + '"></div>'
           + '<div class="form-group"><label>通知メール</label><input type="email" id="edit-email-' + p.propertyId + '" value="' + esc(p.notifyEmail || '') + '"></div>'
-          + '<div class="prop-edit-buttons">'
+          + '<div class="mgmt-edit-buttons">'
           + '<button class="action-btn" onclick="App.saveEditProperty(\'' + p.propertyId + '\')">保存</button>'
           + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditProperty(\'' + p.propertyId + '\')">キャンセル</button>'
-          + '</div>'
-          + '</div>'
-          + '</div>';
+          + '</div></div></div>';
       });
     }
     html += '</div>';
 
-    // 物件追加フォーム
+    // ========== 物件追加 ==========
     html += '<div class="settings-section">'
       + '<h3>➕ 物件を追加</h3>'
       + '<div class="form-group"><label>物件名</label><input type="text" id="new-prop-name" placeholder="例: 高松ゲストハウス"></div>'
@@ -367,7 +364,48 @@ var UI = (function() {
       + '<button class="action-btn" onclick="App.addProperty()">物件を追加</button>'
       + '</div>';
 
-    // 品目追加
+    // ========== 登録済み品目一覧 ==========
+    html += '<div class="settings-section">'
+      + '<h3>📦 登録済み品目</h3>';
+    if (items.length === 0) {
+      html += '<p class="settings-empty">品目がまだ登録されていません</p>';
+    } else {
+      items.forEach(function(it) {
+        var safeId = it.itemId;
+        html += '<div class="mgmt-card" id="item-card-' + safeId + '">'
+          + '<div class="mgmt-card-header">'
+          + '<div class="mgmt-card-name">' + esc(it.name) + ' <span class="mgmt-badge">' + esc(it.category) + '</span></div>'
+          + '<div class="mgmt-card-actions">'
+          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditItem(\'' + safeId + '\')" title="編集">✏️</button>'
+          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteItem(\'' + safeId + '\',\'' + esc(it.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+          + '</div></div>'
+          + '<div class="mgmt-card-details" id="item-details-' + safeId + '">'
+          + '<div class="mgmt-detail">' + esc(it.unit || '個') + ' ／ 発注: ' + (it.orderQty || 1) + ' ／ ¥' + (it.price || 0) + '</div>'
+          + (it.supplier ? '<div class="mgmt-detail">🛒 ' + esc(it.supplier) + '</div>' : '')
+          + (it.note ? '<div class="mgmt-detail">📝 ' + esc(it.note) + '</div>' : '')
+          + '</div>'
+          + '<div class="mgmt-card-edit" id="item-edit-' + safeId + '" style="display:none;">'
+          + '<div class="form-group"><label>品目名</label><input type="text" id="edit-item-name-' + safeId + '" value="' + esc(it.name) + '"></div>'
+          + '<div class="form-group"><label>カテゴリ</label><select id="edit-item-cat-' + safeId + '">'
+          + '<option' + (it.category==='アメニティ'?' selected':'') + '>アメニティ</option>'
+          + '<option' + (it.category==='消耗品'?' selected':'') + '>消耗品</option>'
+          + '<option' + (it.category==='リネン'?' selected':'') + '>リネン</option>'
+          + '<option' + (it.category==='備品'?' selected':'') + '>備品</option></select></div>'
+          + '<div class="form-group"><label>単位</label><input type="text" id="edit-item-unit-' + safeId + '" value="' + esc(it.unit || '個') + '"></div>'
+          + '<div class="form-group"><label>発注単位数</label><input type="number" id="edit-item-oq-' + safeId + '" value="' + (it.orderQty || 1) + '" min="1"></div>'
+          + '<div class="form-group"><label>単価(円)</label><input type="number" id="edit-item-price-' + safeId + '" value="' + (it.price || 0) + '" min="0"></div>'
+          + '<div class="form-group"><label>購入先</label><input type="text" id="edit-item-sup-' + safeId + '" value="' + esc(it.supplier || '') + '"></div>'
+          + '<div class="form-group"><label>購入先URL</label><input type="url" id="edit-item-url-' + safeId + '" value="' + esc(it.supplierUrl || '') + '"></div>'
+          + '<div class="form-group"><label>備考</label><input type="text" id="edit-item-note-' + safeId + '" value="' + esc(it.note || '') + '"></div>'
+          + '<div class="mgmt-edit-buttons">'
+          + '<button class="action-btn" onclick="App.saveEditItem(\'' + safeId + '\')">保存</button>'
+          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditItem(\'' + safeId + '\')">キャンセル</button>'
+          + '</div></div></div>';
+      });
+    }
+    html += '</div>';
+
+    // ========== 品目追加 ==========
     html += '<div class="settings-section">'
       + '<h3>➕ 品目を追加</h3>'
       + '<div class="form-group"><label>品目名</label><input type="text" id="new-item-name" placeholder="例: ハンドソープ"></div>'
@@ -382,9 +420,51 @@ var UI = (function() {
       + '<button class="action-btn" onclick="App.addItem()">品目を追加</button>'
       + '</div>';
 
+    // ========== スタッフ一覧 ==========
     html += '<div class="settings-section">'
-      + '<h3>👥 権限マスタ</h3>'
-      + '<p>スタッフの追加・削除はGoogle スプレッドシートの「権限マスタ」シートを直接編集してください。</p>'
+      + '<h3>👥 スタッフ管理</h3>';
+    if (permissions.length === 0) {
+      html += '<p class="settings-empty">スタッフデータがありません</p>';
+    } else {
+      permissions.forEach(function(pm) {
+        var safeEmail = esc(pm.email).replace(/'/g, "\\'");
+        html += '<div class="mgmt-card" id="perm-card-' + esc(pm.email) + '">'
+          + '<div class="mgmt-card-header">'
+          + '<div class="mgmt-card-name">' + esc(pm.displayName || pm.email)
+          + ' <span class="mgmt-badge ' + (pm.role==='admin'?'mgmt-badge-admin':'') + '">' + (pm.role==='admin'?'管理者':'スタッフ') + '</span>'
+          + (!pm.active ? ' <span class="mgmt-badge mgmt-badge-inactive">無効</span>' : '')
+          + '</div>'
+          + '<div class="mgmt-card-actions">'
+          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditPerm(\'' + safeEmail + '\')" title="編集">✏️</button>'
+          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deletePerm(\'' + safeEmail + '\',\'' + esc(pm.displayName || pm.email).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+          + '</div></div>'
+          + '<div class="mgmt-card-details" id="perm-details-' + esc(pm.email) + '">'
+          + '<div class="mgmt-detail">📧 ' + esc(pm.email) + '</div>'
+          + '</div>'
+          + '<div class="mgmt-card-edit" id="perm-edit-' + esc(pm.email) + '" style="display:none;">'
+          + '<div class="form-group"><label>表示名</label><input type="text" id="edit-perm-name-' + esc(pm.email) + '" value="' + esc(pm.displayName || '') + '"></div>'
+          + '<div class="form-group"><label>権限</label><select id="edit-perm-role-' + esc(pm.email) + '">'
+          + '<option value="admin"' + (pm.role==='admin'?' selected':'') + '>管理者</option>'
+          + '<option value="staff"' + (pm.role==='staff'?' selected':'') + '>スタッフ</option></select></div>'
+          + '<div class="form-group"><label>有効</label><select id="edit-perm-active-' + esc(pm.email) + '">'
+          + '<option value="true"' + (pm.active?' selected':'') + '>有効</option>'
+          + '<option value="false"' + (!pm.active?' selected':'') + '>無効</option></select></div>'
+          + '<div class="mgmt-edit-buttons">'
+          + '<button class="action-btn" onclick="App.saveEditPerm(\'' + safeEmail + '\')">保存</button>'
+          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditPerm(\'' + safeEmail + '\')">キャンセル</button>'
+          + '</div></div></div>';
+      });
+    }
+    html += '</div>';
+
+    // ========== スタッフ追加 ==========
+    html += '<div class="settings-section">'
+      + '<h3>➕ スタッフを追加</h3>'
+      + '<div class="form-group"><label>メールアドレス</label><input type="email" id="new-perm-email" placeholder="例: staff@gmail.com"></div>'
+      + '<div class="form-group"><label>表示名</label><input type="text" id="new-perm-name" placeholder="例: 田中太郎"></div>'
+      + '<div class="form-group"><label>権限</label><select id="new-perm-role">'
+      + '<option value="staff">スタッフ</option><option value="admin">管理者</option></select></div>'
+      + '<button class="action-btn" onclick="App.addPermission()">スタッフを追加</button>'
       + '</div>';
 
     container.innerHTML = html;

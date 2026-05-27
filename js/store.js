@@ -3,6 +3,7 @@ var Store = (function() {
     properties: [],
     items: [],
     stocks: [],
+    permissions: [],
     selectedPropertyId: null,
     selectedCategory: 'all',
     currentTab: 'stock'
@@ -35,6 +36,7 @@ var Store = (function() {
     state.properties = data.properties || [];
     state.items = data.items || [];
     state.stocks = data.stocks || [];
+    state.permissions = data.permissions || [];
     if (state.properties.length > 0 && !state.selectedPropertyId) {
       state.selectedPropertyId = state.properties[0].propertyId;
     }
@@ -43,6 +45,7 @@ var Store = (function() {
 
   function getProperties() { return state.properties; }
   function getItems() { return state.items; }
+  function getPermissions() { return state.permissions; }
 
   function getStocksForProperty(propertyId) {
     var pid = propertyId || state.selectedPropertyId;
@@ -108,7 +111,7 @@ var Store = (function() {
 
   return {
     loadCache: loadCache, setData: setData,
-    getProperties: getProperties, getItems: getItems,
+    getProperties: getProperties, getItems: getItems, getPermissions: getPermissions,
     getStocksForProperty: getStocksForProperty, getAllStocks: getAllStocks,
     getStock: getStock, updateStockLocal: updateStockLocal,
     getSelectedPropertyId: getSelectedPropertyId, setSelectedPropertyId: setSelectedPropertyId,

@@ -59,6 +59,11 @@ var Api = (function() {
   function editProperty(data) { return callAPI('editProperty', data); }
   function deleteProperty(propertyId) { return callAPI('deleteProperty', { propertyId: propertyId }); }
   function addItem(data) { return callAPI('addItem', data); }
+  function editItem(data) { return callAPI('editItem', data); }
+  function deleteItem(itemId) { return callAPI('deleteItem', { itemId: itemId }); }
+  function addPermission(data) { return callAPI('addPermission', data); }
+  function editPermission(data) { return callAPI('editPermission', data); }
+  function deletePermission(email) { return callAPI('deletePermission', { email: email }); }
   function getShortageList() { return callAPI('getShortageList'); }
   function getLogs(limit) { return callAPI('getLogs', { limit: limit || 100 }); }
 
@@ -113,7 +118,9 @@ var Api = (function() {
   return {
     getInitialData: getInitialData, updateStock: updateStock, setStock: setStock,
     addProperty: addProperty, editProperty: editProperty, deleteProperty: deleteProperty,
-    addItem: addItem, getShortageList: getShortageList,
+    addItem: addItem, editItem: editItem, deleteItem: deleteItem,
+    addPermission: addPermission, editPermission: editPermission, deletePermission: deletePermission,
+    getShortageList: getShortageList,
     getLogs: getLogs, processPendingQueue: processPendingQueue, getPendingCount: getPendingCount
   };
 })();
