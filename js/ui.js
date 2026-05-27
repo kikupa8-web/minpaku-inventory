@@ -378,6 +378,7 @@ var UI = (function() {
       + '<div class="form-group"><label>単価(円)</label><input type="number" id="new-item-price" value="0" min="0"></div>'
       + '<div class="form-group"><label>購入先</label><input type="text" id="new-item-supplier"></div>'
       + '<div class="form-group"><label>購入先URL</label><input type="url" id="new-item-url"></div>'
+      + '<div class="form-group"><label>備考</label><input type="text" id="new-item-note" placeholder="例: 50個入"></div>'
       + '<button class="action-btn" onclick="App.addItem()">品目を追加</button>'
       + '</div>';
 

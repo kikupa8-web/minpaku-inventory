@@ -280,7 +280,8 @@ var App = (function() {
       orderQty: document.getElementById('new-item-orderqty').value,
       price: document.getElementById('new-item-price').value,
       supplier: document.getElementById('new-item-supplier').value.trim(),
-      supplierUrl: document.getElementById('new-item-url').value.trim()
+      supplierUrl: document.getElementById('new-item-url').value.trim(),
+      note: document.getElementById('new-item-note').value.trim()
     }).then(function(result) {
       UI.hideLoading();
       if (result.ok) {
