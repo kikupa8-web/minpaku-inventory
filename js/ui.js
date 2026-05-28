@@ -1,5 +1,13 @@
 var UI = (function() {
   // ============================================================
+  // カテゴリ折りたたみ・並び替え状態
+  // ============================================================
+  var collapsedStockCats = {};
+  var collapsedSettingsCats = {};
+  var stockSortKey = 'name-asc';
+  var CAT_ORDER = ['アメニティ', '消耗品', 'リネン', '備品'];
+
+  // ============================================================
   // 同期ステータス
   // ============================================================
   function setSyncStatus(status) {
@@ -112,6 +120,78 @@ var UI = (function() {
   }
 
   // ============================================================
+  // ヘルパー：カテゴリ順にグループ化
+  // ============================================================
+  function groupByCategory(arr, catKey) {
+    var groups = {};
+    arr.forEach(function(item) {
+      var c = item[catKey] || 'その他';
+      if (!groups[c]) groups[c] = [];
+      groups[c].push(item);
+    });
+    var ordered = [];
+    CAT_ORDER.forEach(function(c) { if (groups[c]) ordered.push(c); });
+    Object.keys(groups).forEach(function(c) {
+      if (ordered.indexOf(c) === -1) ordered.push(c);
+    });
+    return { groups: groups, order: ordered };
+  }
+
+  // ヘルパー：在庫ソート
+  function sortStockItems(arr, key) {
+    var sorted = arr.slice();
+    switch(key) {
+      case 'name-asc':
+        sorted.sort(function(a,b) { return (a.itemName||'').localeCompare(b.itemName||'', 'ja'); });
+        break;
+      case 'name-desc':
+        sorted.sort(function(a,b) { return (b.itemName||'').localeCompare(a.itemName||'', 'ja'); });
+        break;
+      case 'stock-asc':
+        sorted.sort(function(a,b) { return a.current - b.current; });
+        break;
+      case 'stock-desc':
+        sorted.sort(function(a,b) { return b.current - a.current; });
+        break;
+      case 'status':
+        sorted.sort(function(a,b) {
+          var o = {'要補充': 0, '残り少': 1, 'OK': 2};
+          return (o[a.status]!=null?o[a.status]:2) - (o[b.status]!=null?o[b.status]:2);
+        });
+        break;
+    }
+    return sorted;
+  }
+
+  // ============================================================
+  // 折りたたみ・並び替え操作
+  // ============================================================
+  function toggleStockCat(cat) {
+    collapsedStockCats[cat] = !collapsedStockCats[cat];
+    renderStockList();
+  }
+  function toggleSettingsCat(cat) {
+    collapsedSettingsCats[cat] = !collapsedSettingsCats[cat];
+    renderSettingsTab();
+  }
+  function toggleAllStockCats() {
+    var cats = Store.getCategories();
+    var allCollapsed = cats.every(function(c) { return !!collapsedStockCats[c]; });
+    cats.forEach(function(c) { collapsedStockCats[c] = !allCollapsed; });
+    renderStockList();
+  }
+  function toggleAllSettingsCats() {
+    var cats = Store.getCategories();
+    var allCollapsed = cats.every(function(c) { return !!collapsedSettingsCats[c]; });
+    cats.forEach(function(c) { collapsedSettingsCats[c] = !allCollapsed; });
+    renderSettingsTab();
+  }
+  function setStockSort(key) {
+    stockSortKey = key;
+    renderStockList();
+  }
+
+  // ============================================================
   // 在庫タブ
   // ============================================================
   function renderStockTab() {
@@ -174,29 +254,62 @@ var UI = (function() {
 
     var html = '';
 
+    // 並び替えバー
+    html += '<div class="sort-bar">'
+      + '<label>並び替え</label>'
+      + '<select class="sort-select" onchange="UI.setStockSort(this.value)">'
+      + '<option value="name-asc"' + (stockSortKey==='name-asc'?' selected':'') + '>品名順</option>'
+      + '<option value="stock-asc"' + (stockSortKey==='stock-asc'?' selected':'') + '>在庫少ない順</option>'
+      + '<option value="stock-desc"' + (stockSortKey==='stock-desc'?' selected':'') + '>在庫多い順</option>'
+      + '<option value="status"' + (stockSortKey==='status'?' selected':'') + '>ステータス順</option>'
+      + '</select>'
+      + '<button class="btn-expand-all" onclick="UI.toggleAllStockCats()">全開閉</button>'
+      + '</div>';
+
     if (stocks.length === 0) {
       html += '<div class="empty-msg">この物件の在庫データがありません</div>';
     } else {
-      stocks.forEach(function(s) {
-        var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
-        html += '<div class="stock-row ' + rowClass + '" data-pid="' + s.propertyId + '" data-iid="' + s.itemId + '">'
-          + '<div class="stock-info">'
-          + '<div class="stock-name">' + esc(s.itemName) + '</div>'
-          + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
-          + '</div>'
-          + '<div class="stock-controls">'
-          + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
-          + '<span class="stock-value">' + s.current + '</span>'
-          + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
-          + (isAdmin ? '<button class="btn-stock-remove" aria-label="削除" onclick="App.removeStockRecord(\'' + s.propertyId + '\',\'' + s.itemId + '\',\'' + esc(s.itemName).replace(/'/g, "\\'") + '\')">🗑️</button>' : '')
-          + '</div>'
-          + '</div>';
+      var result = groupByCategory(stocks, 'category');
+
+      result.order.forEach(function(catName) {
+        var items = sortStockItems(result.groups[catName], stockSortKey);
+        var isCollapsed = !!collapsedStockCats[catName];
+        var shortage = items.filter(function(s){ return s.status === '要補充'; }).length;
+        var low = items.filter(function(s){ return s.status === '残り少'; }).length;
+        var alertHtml = '';
+        if (shortage > 0) alertHtml += ' <span class="cat-alert cat-alert-shortage">要補充' + shortage + '</span>';
+        if (low > 0) alertHtml += ' <span class="cat-alert cat-alert-low">残少' + low + '</span>';
+
+        html += '<div class="cat-group">'
+          + '<div class="cat-header" onclick="UI.toggleStockCat(\'' + escAttr(catName) + '\')">'
+          + '<div class="cat-header-left">'
+          + '<span class="cat-toggle' + (isCollapsed ? ' collapsed' : '') + '">▼</span>'
+          + '<span>' + esc(catName) + '</span>'
+          + '<span class="cat-count">' + items.length + '件</span>'
+          + alertHtml
+          + '</div></div>'
+          + '<div class="cat-body' + (isCollapsed ? ' collapsed' : '') + '">';
+
+        items.forEach(function(s) {
+          var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
+          html += '<div class="stock-row ' + rowClass + '">'
+            + '<div class="stock-info">'
+            + '<div class="stock-name">' + esc(s.itemName) + '</div>'
+            + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
+            + '</div>'
+            + '<div class="stock-controls">'
+            + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
+            + '<span class="stock-value">' + s.current + '</span>'
+            + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
+            + (isAdmin ? '<button class="btn-stock-remove" aria-label="削除" onclick="App.removeStockRecord(\'' + s.propertyId + '\',\'' + s.itemId + '\',\'' + escAttr(s.itemName) + '\')">🗑️</button>' : '')
+            + '</div></div>';
+        });
+        html += '</div></div>';
       });
     }
 
-    // 管理者のみ：品目追加・削除ボタン
+    // 管理者のみ：品目追加
     if (isAdmin) {
-      var pid = Store.getSelectedPropertyId();
       html += '<div id="stock-add-area" class="stock-add-area">'
         + '<button class="action-btn stock-add-btn" onclick="App.showAddStockForm()">＋ この物件に品目を追加</button>'
         + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
@@ -206,9 +319,7 @@ var UI = (function() {
         + '<div class="mgmt-edit-buttons">'
         + '<button class="action-btn" onclick="App.addStockRecord()">追加</button>'
         + '<button class="action-btn action-btn-cancel" onclick="App.hideAddStockForm()">キャンセル</button>'
-        + '</div>'
-        + '</div>'
-        + '</div>';
+        + '</div></div></div>';
     }
 
     container.innerHTML = html;
@@ -219,8 +330,6 @@ var UI = (function() {
       if (sel) {
         var pid = Store.getSelectedPropertyId();
         var existingItemIds = {};
-        stocks.forEach(function(s) { existingItemIds[s.itemId] = true; });
-        // フィルタなし全在庫から既存品目を取得
         Store.getStocksForProperty(pid).forEach(function(s) { existingItemIds[s.itemId] = true; });
         var allItems = Store.getItems();
         var available = allItems.filter(function(it) { return !existingItemIds[it.itemId]; });
@@ -247,19 +356,36 @@ var UI = (function() {
     var properties = Store.getProperties();
     var allStocks = Store.getAllStocks();
     var itemSet = {};
-    allStocks.forEach(function(s) { itemSet[s.itemId] = s.itemName; });
-    var itemIds = Object.keys(itemSet).sort();
+    allStocks.forEach(function(s) {
+      itemSet[s.itemId] = { name: s.itemName, category: s.category || 'その他' };
+    });
+    var itemIds = Object.keys(itemSet);
+
+    // カテゴリ順にソート
+    itemIds.sort(function(a, b) {
+      var ca = CAT_ORDER.indexOf(itemSet[a].category);
+      var cb = CAT_ORDER.indexOf(itemSet[b].category);
+      if (ca === -1) ca = 99;
+      if (cb === -1) cb = 99;
+      if (ca !== cb) return ca - cb;
+      return (itemSet[a].name || '').localeCompare(itemSet[b].name || '', 'ja');
+    });
 
     var html = '<div class="overview-actions">'
       + '<button class="action-btn" onclick="App.exportCSV()">CSV出力</button>'
       + '</div>';
 
-    html += '<div class="overview-scroll"><table class="overview-table"><thead><tr><th>品目</th>';
+    html += '<div class="overview-scroll"><table class="overview-table"><thead><tr><th>カテゴリ</th><th>品目</th>';
     properties.forEach(function(p) { html += '<th>' + esc(p.name) + '</th>'; });
     html += '</tr></thead><tbody>';
 
+    var prevCat = '';
     itemIds.forEach(function(iid) {
-      html += '<tr><td class="item-label">' + esc(itemSet[iid]) + '</td>';
+      var info = itemSet[iid];
+      var showCat = info.category !== prevCat;
+      prevCat = info.category;
+      html += '<tr><td class="item-label">' + (showCat ? esc(info.category) : '') + '</td>';
+      html += '<td class="item-label">' + esc(info.name) + '</td>';
       properties.forEach(function(p) {
         var stock = Store.getStock(p.propertyId, iid);
         if (stock) {
@@ -375,28 +501,7 @@ var UI = (function() {
       html += '<p class="settings-empty">物件がまだ登録されていません</p>';
     } else {
       properties.forEach(function(p) {
-        html += '<div class="mgmt-card" id="prop-card-' + p.propertyId + '">'
-          + '<div class="mgmt-card-header">'
-          + '<div class="mgmt-card-name">' + esc(p.name) + '</div>'
-          + '<div class="mgmt-card-actions">'
-          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditProperty(\'' + p.propertyId + '\')" title="編集">✏️</button>'
-          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteProperty(\'' + p.propertyId + '\',\'' + esc(p.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
-          + '</div></div>'
-          + '<div class="mgmt-card-details" id="prop-details-' + p.propertyId + '">'
-          + '<div class="mgmt-detail">📍 ' + esc(p.location || '未設定') + '</div>'
-          + '<div class="mgmt-detail">🛏️ ' + (p.rooms || 0) + '部屋　👤 ' + esc(p.manager || '未設定') + '</div>'
-          + '<div class="mgmt-detail">📧 ' + esc(p.notifyEmail || '未設定') + '</div>'
-          + '</div>'
-          + '<div class="mgmt-card-edit" id="prop-edit-' + p.propertyId + '" style="display:none;">'
-          + '<div class="form-group"><label>物件名</label><input type="text" id="edit-name-' + p.propertyId + '" value="' + esc(p.name) + '"></div>'
-          + '<div class="form-group"><label>所在地</label><input type="text" id="edit-location-' + p.propertyId + '" value="' + esc(p.location || '') + '"></div>'
-          + '<div class="form-group"><label>部屋数</label><input type="number" id="edit-rooms-' + p.propertyId + '" value="' + (p.rooms || 1) + '" min="1"></div>'
-          + '<div class="form-group"><label>担当者</label><input type="text" id="edit-manager-' + p.propertyId + '" value="' + esc(p.manager || '') + '"></div>'
-          + '<div class="form-group"><label>通知メール</label><input type="email" id="edit-email-' + p.propertyId + '" value="' + esc(p.notifyEmail || '') + '"></div>'
-          + '<div class="mgmt-edit-buttons">'
-          + '<button class="action-btn" onclick="App.saveEditProperty(\'' + p.propertyId + '\')">保存</button>'
-          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditProperty(\'' + p.propertyId + '\')">キャンセル</button>'
-          + '</div></div></div>';
+        html += renderPropertyCard(p);
       });
     }
     html += '</div>';
@@ -412,43 +517,36 @@ var UI = (function() {
       + '<button class="action-btn" onclick="App.addProperty()">物件を追加</button>'
       + '</div>';
 
-    // ========== 登録済み品目一覧 ==========
+    // ========== 登録済み品目一覧（カテゴリ別折りたたみ） ==========
     html += '<div class="settings-section">'
-      + '<h3>📦 登録済み品目</h3>';
+      + '<h3>📦 登録済み品目'
+      + (items.length > 0 ? ' <button class="btn-expand-all" onclick="UI.toggleAllSettingsCats()" style="margin-left:8px;">全開閉</button>' : '')
+      + '</h3>';
     if (items.length === 0) {
       html += '<p class="settings-empty">品目がまだ登録されていません</p>';
     } else {
-      items.forEach(function(it) {
-        var safeId = it.itemId;
-        html += '<div class="mgmt-card" id="item-card-' + safeId + '">'
-          + '<div class="mgmt-card-header">'
-          + '<div class="mgmt-card-name">' + esc(it.name) + ' <span class="mgmt-badge">' + esc(it.category) + '</span></div>'
-          + '<div class="mgmt-card-actions">'
-          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditItem(\'' + safeId + '\')" title="編集">✏️</button>'
-          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteItem(\'' + safeId + '\',\'' + esc(it.name).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
+      var sortedItems = items.slice().sort(function(a,b) {
+        return (a.name||'').localeCompare(b.name||'', 'ja');
+      });
+      var result = groupByCategory(sortedItems, 'category');
+
+      result.order.forEach(function(catName) {
+        var catItems = result.groups[catName];
+        var isCollapsed = !!collapsedSettingsCats[catName];
+
+        html += '<div class="cat-group">'
+          + '<div class="cat-header" onclick="UI.toggleSettingsCat(\'' + escAttr(catName) + '\')">'
+          + '<div class="cat-header-left">'
+          + '<span class="cat-toggle' + (isCollapsed ? ' collapsed' : '') + '">▼</span>'
+          + '<span>' + esc(catName) + '</span>'
+          + '<span class="cat-count">' + catItems.length + '件</span>'
           + '</div></div>'
-          + '<div class="mgmt-card-details" id="item-details-' + safeId + '">'
-          + '<div class="mgmt-detail">' + esc(it.unit || '個') + ' ／ 発注: ' + (it.orderQty || 1) + ' ／ ¥' + (it.price || 0) + '</div>'
-          + (it.supplier ? '<div class="mgmt-detail">🛒 ' + esc(it.supplier) + '</div>' : '')
-          + (it.note ? '<div class="mgmt-detail">📝 ' + esc(it.note) + '</div>' : '')
-          + '</div>'
-          + '<div class="mgmt-card-edit" id="item-edit-' + safeId + '" style="display:none;">'
-          + '<div class="form-group"><label>品目名</label><input type="text" id="edit-item-name-' + safeId + '" value="' + esc(it.name) + '"></div>'
-          + '<div class="form-group"><label>カテゴリ</label><select id="edit-item-cat-' + safeId + '">'
-          + '<option' + (it.category==='アメニティ'?' selected':'') + '>アメニティ</option>'
-          + '<option' + (it.category==='消耗品'?' selected':'') + '>消耗品</option>'
-          + '<option' + (it.category==='リネン'?' selected':'') + '>リネン</option>'
-          + '<option' + (it.category==='備品'?' selected':'') + '>備品</option></select></div>'
-          + '<div class="form-group"><label>単位</label><input type="text" id="edit-item-unit-' + safeId + '" value="' + esc(it.unit || '個') + '"></div>'
-          + '<div class="form-group"><label>発注単位数</label><input type="number" id="edit-item-oq-' + safeId + '" value="' + (it.orderQty || 1) + '" min="1"></div>'
-          + '<div class="form-group"><label>単価(円)</label><input type="number" id="edit-item-price-' + safeId + '" value="' + (it.price || 0) + '" min="0"></div>'
-          + '<div class="form-group"><label>購入先</label><input type="text" id="edit-item-sup-' + safeId + '" value="' + esc(it.supplier || '') + '"></div>'
-          + '<div class="form-group"><label>購入先URL</label><input type="url" id="edit-item-url-' + safeId + '" value="' + esc(it.supplierUrl || '') + '"></div>'
-          + '<div class="form-group"><label>備考</label><input type="text" id="edit-item-note-' + safeId + '" value="' + esc(it.note || '') + '"></div>'
-          + '<div class="mgmt-edit-buttons">'
-          + '<button class="action-btn" onclick="App.saveEditItem(\'' + safeId + '\')">保存</button>'
-          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditItem(\'' + safeId + '\')">キャンセル</button>'
-          + '</div></div></div>';
+          + '<div class="cat-body' + (isCollapsed ? ' collapsed' : '') + '">';
+
+        catItems.forEach(function(it) {
+          html += renderItemCard(it);
+        });
+        html += '</div></div>';
       });
     }
     html += '</div>';
@@ -475,32 +573,7 @@ var UI = (function() {
       html += '<p class="settings-empty">スタッフデータがありません</p>';
     } else {
       permissions.forEach(function(pm) {
-        var safeEmail = esc(pm.email).replace(/'/g, "\\'");
-        html += '<div class="mgmt-card" id="perm-card-' + esc(pm.email) + '">'
-          + '<div class="mgmt-card-header">'
-          + '<div class="mgmt-card-name">' + esc(pm.displayName || pm.email)
-          + ' <span class="mgmt-badge ' + (pm.role==='admin'?'mgmt-badge-admin':'') + '">' + (pm.role==='admin'?'管理者':'スタッフ') + '</span>'
-          + (!pm.active ? ' <span class="mgmt-badge mgmt-badge-inactive">無効</span>' : '')
-          + '</div>'
-          + '<div class="mgmt-card-actions">'
-          + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditPerm(\'' + safeEmail + '\')" title="編集">✏️</button>'
-          + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deletePerm(\'' + safeEmail + '\',\'' + esc(pm.displayName || pm.email).replace(/'/g, "\\'") + '\')" title="削除">🗑️</button>'
-          + '</div></div>'
-          + '<div class="mgmt-card-details" id="perm-details-' + esc(pm.email) + '">'
-          + '<div class="mgmt-detail">📧 ' + esc(pm.email) + '</div>'
-          + '</div>'
-          + '<div class="mgmt-card-edit" id="perm-edit-' + esc(pm.email) + '" style="display:none;">'
-          + '<div class="form-group"><label>表示名</label><input type="text" id="edit-perm-name-' + esc(pm.email) + '" value="' + esc(pm.displayName || '') + '"></div>'
-          + '<div class="form-group"><label>権限</label><select id="edit-perm-role-' + esc(pm.email) + '">'
-          + '<option value="admin"' + (pm.role==='admin'?' selected':'') + '>管理者</option>'
-          + '<option value="staff"' + (pm.role==='staff'?' selected':'') + '>スタッフ</option></select></div>'
-          + '<div class="form-group"><label>有効</label><select id="edit-perm-active-' + esc(pm.email) + '">'
-          + '<option value="true"' + (pm.active?' selected':'') + '>有効</option>'
-          + '<option value="false"' + (!pm.active?' selected':'') + '>無効</option></select></div>'
-          + '<div class="mgmt-edit-buttons">'
-          + '<button class="action-btn" onclick="App.saveEditPerm(\'' + safeEmail + '\')">保存</button>'
-          + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditPerm(\'' + safeEmail + '\')">キャンセル</button>'
-          + '</div></div></div>';
+        html += renderPermCard(pm);
       });
     }
     html += '</div>';
@@ -519,6 +592,96 @@ var UI = (function() {
   }
 
   // ============================================================
+  // カード描画ヘルパー
+  // ============================================================
+  function renderPropertyCard(p) {
+    return '<div class="mgmt-card" id="prop-card-' + p.propertyId + '">'
+      + '<div class="mgmt-card-header">'
+      + '<div class="mgmt-card-name">' + esc(p.name) + '</div>'
+      + '<div class="mgmt-card-actions">'
+      + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditProperty(\'' + p.propertyId + '\')" title="編集">✏️</button>'
+      + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteProperty(\'' + p.propertyId + '\',\'' + escAttr(p.name) + '\')" title="削除">🗑️</button>'
+      + '</div></div>'
+      + '<div class="mgmt-card-details" id="prop-details-' + p.propertyId + '">'
+      + '<div class="mgmt-detail">📍 ' + esc(p.location || '未設定') + '</div>'
+      + '<div class="mgmt-detail">🛏️ ' + (p.rooms || 0) + '部屋　👤 ' + esc(p.manager || '未設定') + '</div>'
+      + '<div class="mgmt-detail">📧 ' + esc(p.notifyEmail || '未設定') + '</div>'
+      + '</div>'
+      + '<div class="mgmt-card-edit" id="prop-edit-' + p.propertyId + '" style="display:none;">'
+      + '<div class="form-group"><label>物件名</label><input type="text" id="edit-name-' + p.propertyId + '" value="' + esc(p.name) + '"></div>'
+      + '<div class="form-group"><label>所在地</label><input type="text" id="edit-location-' + p.propertyId + '" value="' + esc(p.location || '') + '"></div>'
+      + '<div class="form-group"><label>部屋数</label><input type="number" id="edit-rooms-' + p.propertyId + '" value="' + (p.rooms || 1) + '" min="1"></div>'
+      + '<div class="form-group"><label>担当者</label><input type="text" id="edit-manager-' + p.propertyId + '" value="' + esc(p.manager || '') + '"></div>'
+      + '<div class="form-group"><label>通知メール</label><input type="email" id="edit-email-' + p.propertyId + '" value="' + esc(p.notifyEmail || '') + '"></div>'
+      + '<div class="mgmt-edit-buttons">'
+      + '<button class="action-btn" onclick="App.saveEditProperty(\'' + p.propertyId + '\')">保存</button>'
+      + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditProperty(\'' + p.propertyId + '\')">キャンセル</button>'
+      + '</div></div></div>';
+  }
+
+  function renderItemCard(it) {
+    var safeId = it.itemId;
+    return '<div class="mgmt-card" id="item-card-' + safeId + '">'
+      + '<div class="mgmt-card-header">'
+      + '<div class="mgmt-card-name">' + esc(it.name) + '</div>'
+      + '<div class="mgmt-card-actions">'
+      + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditItem(\'' + safeId + '\')" title="編集">✏️</button>'
+      + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deleteItem(\'' + safeId + '\',\'' + escAttr(it.name) + '\')" title="削除">🗑️</button>'
+      + '</div></div>'
+      + '<div class="mgmt-card-details" id="item-details-' + safeId + '">'
+      + '<div class="mgmt-detail">' + esc(it.unit || '個') + ' ／ 発注: ' + (it.orderQty || 1) + ' ／ ¥' + (it.price || 0) + '</div>'
+      + (it.supplier ? '<div class="mgmt-detail">🛒 ' + esc(it.supplier) + '</div>' : '')
+      + (it.note ? '<div class="mgmt-detail">📝 ' + esc(it.note) + '</div>' : '')
+      + '</div>'
+      + '<div class="mgmt-card-edit" id="item-edit-' + safeId + '" style="display:none;">'
+      + '<div class="form-group"><label>品目名</label><input type="text" id="edit-item-name-' + safeId + '" value="' + esc(it.name) + '"></div>'
+      + '<div class="form-group"><label>カテゴリ</label><select id="edit-item-cat-' + safeId + '">'
+      + '<option' + (it.category==='アメニティ'?' selected':'') + '>アメニティ</option>'
+      + '<option' + (it.category==='消耗品'?' selected':'') + '>消耗品</option>'
+      + '<option' + (it.category==='リネン'?' selected':'') + '>リネン</option>'
+      + '<option' + (it.category==='備品'?' selected':'') + '>備品</option></select></div>'
+      + '<div class="form-group"><label>単位</label><input type="text" id="edit-item-unit-' + safeId + '" value="' + esc(it.unit || '個') + '"></div>'
+      + '<div class="form-group"><label>発注単位数</label><input type="number" id="edit-item-oq-' + safeId + '" value="' + (it.orderQty || 1) + '" min="1"></div>'
+      + '<div class="form-group"><label>単価(円)</label><input type="number" id="edit-item-price-' + safeId + '" value="' + (it.price || 0) + '" min="0"></div>'
+      + '<div class="form-group"><label>購入先</label><input type="text" id="edit-item-sup-' + safeId + '" value="' + esc(it.supplier || '') + '"></div>'
+      + '<div class="form-group"><label>購入先URL</label><input type="url" id="edit-item-url-' + safeId + '" value="' + esc(it.supplierUrl || '') + '"></div>'
+      + '<div class="form-group"><label>備考</label><input type="text" id="edit-item-note-' + safeId + '" value="' + esc(it.note || '') + '"></div>'
+      + '<div class="mgmt-edit-buttons">'
+      + '<button class="action-btn" onclick="App.saveEditItem(\'' + safeId + '\')">保存</button>'
+      + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditItem(\'' + safeId + '\')">キャンセル</button>'
+      + '</div></div></div>';
+  }
+
+  function renderPermCard(pm) {
+    var safeEmail = escAttr(pm.email);
+    return '<div class="mgmt-card" id="perm-card-' + esc(pm.email) + '">'
+      + '<div class="mgmt-card-header">'
+      + '<div class="mgmt-card-name">' + esc(pm.displayName || pm.email)
+      + ' <span class="mgmt-badge ' + (pm.role==='admin'?'mgmt-badge-admin':'') + '">' + (pm.role==='admin'?'管理者':'スタッフ') + '</span>'
+      + (!pm.active ? ' <span class="mgmt-badge mgmt-badge-inactive">無効</span>' : '')
+      + '</div>'
+      + '<div class="mgmt-card-actions">'
+      + '<button class="mgmt-btn mgmt-btn-edit" onclick="App.showEditPerm(\'' + safeEmail + '\')" title="編集">✏️</button>'
+      + '<button class="mgmt-btn mgmt-btn-delete" onclick="App.deletePerm(\'' + safeEmail + '\',\'' + escAttr(pm.displayName || pm.email) + '\')" title="削除">🗑️</button>'
+      + '</div></div>'
+      + '<div class="mgmt-card-details" id="perm-details-' + esc(pm.email) + '">'
+      + '<div class="mgmt-detail">📧 ' + esc(pm.email) + '</div>'
+      + '</div>'
+      + '<div class="mgmt-card-edit" id="perm-edit-' + esc(pm.email) + '" style="display:none;">'
+      + '<div class="form-group"><label>表示名</label><input type="text" id="edit-perm-name-' + esc(pm.email) + '" value="' + esc(pm.displayName || '') + '"></div>'
+      + '<div class="form-group"><label>権限</label><select id="edit-perm-role-' + esc(pm.email) + '">'
+      + '<option value="admin"' + (pm.role==='admin'?' selected':'') + '>管理者</option>'
+      + '<option value="staff"' + (pm.role==='staff'?' selected':'') + '>スタッフ</option></select></div>'
+      + '<div class="form-group"><label>有効</label><select id="edit-perm-active-' + esc(pm.email) + '">'
+      + '<option value="true"' + (pm.active?' selected':'') + '>有効</option>'
+      + '<option value="false"' + (!pm.active?' selected':'') + '>無効</option></select></div>'
+      + '<div class="mgmt-edit-buttons">'
+      + '<button class="action-btn" onclick="App.saveEditPerm(\'' + safeEmail + '\')">保存</button>'
+      + '<button class="action-btn action-btn-cancel" onclick="App.cancelEditPerm(\'' + safeEmail + '\')">キャンセル</button>'
+      + '</div></div></div>';
+  }
+
+  // ============================================================
   // ユーティリティ
   // ============================================================
   function esc(str) {
@@ -528,6 +691,10 @@ var UI = (function() {
     return d.innerHTML;
   }
 
+  function escAttr(str) {
+    return esc(str).replace(/'/g, "\\'");
+  }
+
   return {
     setSyncStatus: setSyncStatus, updatePendingBadge: updatePendingBadge,
     showToast: showToast, showLoading: showLoading, hideLoading: hideLoading,
@@ -535,6 +702,9 @@ var UI = (function() {
     renderHeader: renderHeader, switchTab: switchTab,
     renderStockTab: renderStockTab, renderStockList: renderStockList, renderAlertSummary: renderAlertSummary,
     renderOverviewTab: renderOverviewTab, renderOrderTab: renderOrderTab,
-    renderHistoryTab: renderHistoryTab, renderSettingsTab: renderSettingsTab
+    renderHistoryTab: renderHistoryTab, renderSettingsTab: renderSettingsTab,
+    toggleStockCat: toggleStockCat, toggleSettingsCat: toggleSettingsCat,
+    toggleAllStockCats: toggleAllStockCats, toggleAllSettingsCats: toggleAllSettingsCats,
+    setStockSort: setStockSort
   };
 })();
