@@ -375,7 +375,6 @@ var UI = (function() {
         + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
         + '<div class="form-group"><label>カテゴリで絞り込み</label><select id="stock-add-cat-filter" class="property-select" onchange="UI.filterStockAddItems()"><option value="">すべて</option><option>アメニティ</option><option>消耗品</option><option>リネン</option><option>備品</option></select></div>'
         + '<div class="form-group"><label>追加する品目を選択 <span class="bulk-select-all"><label><input type="checkbox" id="stock-add-all" onchange="UI.toggleAllStockAddItems(this.checked)"> 全選択</label></span></label>'
-        + '<div class="stock-add-col-header"><span class="stock-add-col-name">品目名</span><span class="stock-add-col-num">最低数</span><span class="stock-add-col-num">初期在庫</span></div>'
         + '<div id="stock-add-checklist" class="stock-add-checklist"></div></div>'
         + '<div class="mgmt-edit-buttons">'
         + '<button class="action-btn" onclick="App.bulkAddStockRecords()">まとめて追加</button>'
@@ -766,10 +765,12 @@ var UI = (function() {
         html += '<div class="stock-add-check-item">'
           + '<label class="stock-add-check-label">'
           + '<input type="checkbox" value="' + it.itemId + '" class="stock-add-check">'
-          + '<span>' + esc(it.name) + (filterCat ? '' : ' <small>(' + esc(it.category) + ')</small>') + '</span>'
+          + '<span>' + esc(it.name) + (filterCat ? '' : '（' + esc(it.category) + '）') + '</span>'
           + '</label>'
-          + '<input type="number" class="stock-add-item-min" data-id="' + it.itemId + '" value="5" min="0" placeholder="最低">'
-          + '<input type="number" class="stock-add-item-init" data-id="' + it.itemId + '" value="0" min="0" placeholder="初期">'
+          + '<div class="stock-add-nums">'
+          + '<label class="stock-add-num-label">最低<input type="number" class="stock-add-item-min" data-id="' + it.itemId + '" value="5" min="0"></label>'
+          + '<label class="stock-add-num-label">初期<input type="number" class="stock-add-item-init" data-id="' + it.itemId + '" value="0" min="0"></label>'
+          + '</div>'
           + '</div>';
       });
     }
