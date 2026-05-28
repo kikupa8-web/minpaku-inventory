@@ -188,6 +188,7 @@ var UI = (function() {
           + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
           + '<span class="stock-value">' + s.current + '</span>'
           + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
+          + (isAdmin ? '<button class="btn-stock-remove" aria-label="削除" onclick="App.removeStockRecord(\'' + s.propertyId + '\',\'' + s.itemId + '\',\'' + esc(s.itemName).replace(/'/g, "\\'") + '\')">🗑️</button>' : '')
           + '</div>'
           + '</div>';
       });

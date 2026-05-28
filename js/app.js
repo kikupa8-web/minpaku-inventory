@@ -299,6 +299,16 @@ var App = (function() {
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
 
+  function removeStockRecord(propertyId, itemId, itemName) {
+    if (!confirm('「' + itemName + '」をこの物件から外しますか？')) return;
+    UI.showLoading();
+    Api.removeStockRecord(propertyId, itemId).then(function(result) {
+      UI.hideLoading();
+      if (result.ok) { UI.showToast('品目を物件から外しました', 'success'); refreshData(); }
+      else { UI.showToast(result.error, 'error'); }
+    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+  }
+
   // ============ 品目管理 ============
   function showEditItem(itemId) {
     document.getElementById('item-edit-' + itemId).style.display = 'block';
@@ -422,7 +432,7 @@ var App = (function() {
     init: init, onLoginSuccess: onLoginSuccess, refreshData: refreshData,
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
     showAddStockForm: showAddStockForm, hideAddStockForm: hideAddStockForm,
-    addStockRecord: addStockRecord,
+    addStockRecord: addStockRecord, removeStockRecord: removeStockRecord,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
     deleteProperty: deleteProperty,
