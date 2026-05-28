@@ -339,7 +339,9 @@ var UI = (function() {
         items.forEach(function(s, idx) {
           var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
           var gapClass = breakSet[idx] ? ' item-group-gap' : '';
-          html += '<div class="stock-row ' + rowClass + gapClass + '">'
+          var editKey = s.propertyId + '-' + s.itemId;
+          html += '<div class="stock-row-wrap ' + gapClass + '">'
+            + '<div class="stock-row ' + rowClass + '">'
             + '<div class="stock-info">'
             + '<div class="stock-name">' + esc(s.itemName) + '</div>'
             + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
@@ -348,8 +350,19 @@ var UI = (function() {
             + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
             + '<span class="stock-value">' + s.current + '</span>'
             + '<button class="btn-plus" aria-label="1増やす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',1)">＋</button>'
+            + (isAdmin ? '<button class="btn-stock-edit" aria-label="編集" onclick="App.showEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">✏️</button>' : '')
             + (isAdmin ? '<button class="btn-stock-remove" aria-label="削除" onclick="App.removeStockRecord(\'' + s.propertyId + '\',\'' + s.itemId + '\',\'' + escAttr(s.itemName) + '\')">🗑️</button>' : '')
-            + '</div></div>';
+            + '</div></div>'
+            + (isAdmin ? '<div class="stock-edit-panel" id="stock-edit-' + editKey + '" style="display:none;">'
+              + '<div class="stock-edit-row">'
+              + '<div class="form-group"><label>最低数</label><input type="number" id="stock-edit-min-' + editKey + '" value="' + s.minimum + '" min="0"></div>'
+              + '<div class="form-group"><label>在庫数</label><input type="number" id="stock-edit-cur-' + editKey + '" value="' + s.current + '" min="0"></div>'
+              + '</div>'
+              + '<div class="mgmt-edit-buttons">'
+              + '<button class="action-btn" onclick="App.saveEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">保存</button>'
+              + '<button class="action-btn action-btn-cancel" onclick="App.showEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">閉じる</button>'
+              + '</div></div>' : '')
+            + '</div>';
         });
         html += '</div></div>';
       });

@@ -240,13 +240,25 @@ body {
   font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums;
   color: var(--color-text);
 }
-.btn-stock-remove {
+.btn-stock-edit, .btn-stock-remove {
   width: 32px; height: 32px; border: none; background: none;
   font-size: 14px; cursor: pointer; opacity: 0.4;
   display: flex; align-items: center; justify-content: center;
   margin-left: 2px; transition: opacity 0.2s;
 }
+.btn-stock-edit:hover, .btn-stock-edit:active,
 .btn-stock-remove:hover, .btn-stock-remove:active { opacity: 1; }
+
+.stock-row-wrap { /* ラッパー */ }
+.stock-edit-panel {
+  background: var(--color-white); border-radius: 0 0 var(--radius) var(--radius);
+  padding: 10px 12px; margin-top: -2px;
+  border: 1px solid var(--color-border); border-top: 1px dashed var(--color-border);
+}
+.stock-edit-row {
+  display: flex; gap: 12px;
+}
+.stock-edit-row .form-group { flex: 1; margin-bottom: 6px; }
 
 .empty-msg {
   text-align: center; padding: 40px 16px;

@@ -304,6 +304,35 @@ var App = (function() {
     });
   }
 
+  function showEditStock(propertyId, itemId) {
+    var el = document.getElementById('stock-edit-' + propertyId + '-' + itemId);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function saveEditStock(propertyId, itemId) {
+    var minEl = document.getElementById('stock-edit-min-' + propertyId + '-' + itemId);
+    var curEl = document.getElementById('stock-edit-cur-' + propertyId + '-' + itemId);
+    if (!minEl || !curEl) return;
+    UI.showLoading();
+    Api.editStockRecord({
+      propertyId: propertyId,
+      itemId: itemId,
+      minimum: Number(minEl.value),
+      current: Number(curEl.value)
+    }).then(function(result) {
+      if (result.ok) {
+        UI.showToast('在庫設定を更新しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
+    });
+  }
+
   function removeStockRecord(propertyId, itemId, itemName) {
     if (!confirm('「' + itemName + '」をこの物件から外しますか？')) return;
     UI.showLoading();
@@ -479,7 +508,8 @@ var App = (function() {
     init: init, onLoginSuccess: onLoginSuccess, refreshData: refreshData,
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
     showAddStockForm: showAddStockForm, hideAddStockForm: hideAddStockForm,
-    addStockRecord: addStockRecord, removeStockRecord: removeStockRecord,
+    addStockRecord: addStockRecord, showEditStock: showEditStock, saveEditStock: saveEditStock,
+    removeStockRecord: removeStockRecord,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
     deleteProperty: deleteProperty,
