@@ -337,13 +337,15 @@ var App = (function() {
   function saveEditStock(propertyId, itemId) {
     var minEl = document.getElementById('stock-edit-min-' + propertyId + '-' + itemId);
     var curEl = document.getElementById('stock-edit-cur-' + propertyId + '-' + itemId);
+    var memoEl = document.getElementById('stock-edit-memo-' + propertyId + '-' + itemId);
     if (!minEl || !curEl) return;
     UI.showLoading();
     Api.editStockRecord({
       propertyId: propertyId,
       itemId: itemId,
       minimum: Number(minEl.value),
-      current: Number(curEl.value)
+      current: Number(curEl.value),
+      memo: memoEl ? memoEl.value.trim() : ''
     }).then(function(result) {
       if (result.ok) {
         UI.showToast('在庫設定を更新しました', 'success');

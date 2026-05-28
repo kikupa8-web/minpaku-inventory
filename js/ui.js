@@ -345,6 +345,7 @@ var UI = (function() {
             + '<div class="stock-info">'
             + '<div class="stock-name">' + esc(s.itemName) + '</div>'
             + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
+            + (s.memo ? '<div class="stock-memo">📝 ' + esc(s.memo) + '</div>' : '')
             + '</div>'
             + '<div class="stock-controls">'
             + '<button class="btn-minus" aria-label="1減らす" onclick="App.handleStock(\'' + s.propertyId + '\',\'' + s.itemId + '\',-1)">−</button>'
@@ -358,6 +359,7 @@ var UI = (function() {
               + '<div class="form-group"><label>最低数</label><input type="number" id="stock-edit-min-' + editKey + '" value="' + s.minimum + '" min="0"></div>'
               + '<div class="form-group"><label>在庫数</label><input type="number" id="stock-edit-cur-' + editKey + '" value="' + s.current + '" min="0"></div>'
               + '</div>'
+              + '<div class="form-group"><label>備考</label><input type="text" id="stock-edit-memo-' + editKey + '" value="' + esc(s.memo || '') + '" placeholder="例: 賞味期限 2026/12"></div>'
               + '<div class="mgmt-edit-buttons">'
               + '<button class="action-btn" onclick="App.saveEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">保存</button>'
               + '<button class="action-btn action-btn-cancel" onclick="App.showEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">閉じる</button>'
@@ -771,6 +773,7 @@ var UI = (function() {
           + '<label class="stock-add-num-label">最低<input type="number" class="stock-add-item-min" data-id="' + it.itemId + '" value="5" min="0"></label>'
           + '<label class="stock-add-num-label">初期<input type="number" class="stock-add-item-init" data-id="' + it.itemId + '" value="0" min="0"></label>'
           + '</div>'
+          + '<div class="stock-add-memo-wrap"><input type="text" class="stock-add-item-memo" data-id="' + it.itemId + '" placeholder="備考（例: 賞味期限 2026/12）"></div>'
           + '</div>';
       });
     }
@@ -791,10 +794,12 @@ var UI = (function() {
       var id = cb.value;
       var minEl = document.querySelector('.stock-add-item-min[data-id="' + id + '"]');
       var initEl = document.querySelector('.stock-add-item-init[data-id="' + id + '"]');
+      var memoEl = document.querySelector('.stock-add-item-memo[data-id="' + id + '"]');
       items.push({
         itemId: id,
         minimum: minEl ? minEl.value : '5',
-        initial: initEl ? initEl.value : '0'
+        initial: initEl ? initEl.value : '0',
+        memo: memoEl ? memoEl.value.trim() : ''
       });
     });
     return items;
