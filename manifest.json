@@ -1,6 +1,6 @@
 {
-  "name": "AssistBnB",
-  "short_name": "AssistBnB",
+  "name": "民泊在庫管理",
+  "short_name": "在庫管理",
   "description": "民泊物件の在庫をスマホで簡単管理",
   "start_url": "./index.html",
   "display": "standalone",
