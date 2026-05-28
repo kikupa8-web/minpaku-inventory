@@ -385,8 +385,13 @@ var UI = (function() {
 
     container.innerHTML = html;
 
-    // 品目セレクトボックスを埋める（未登録品目のみ）
+    // 品目セレクトボックスを埋める（カテゴリタブに連動）
     if (isAdmin) {
+      var catSel = document.getElementById('stock-add-cat-filter');
+      if (catSel) {
+        var activeCat = Store.getSelectedCategory();
+        catSel.value = (activeCat !== 'all') ? activeCat : '';
+      }
       filterStockAddItems();
     }
   }
