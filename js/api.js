@@ -26,7 +26,17 @@ var Api = (function() {
     })
     .then(function(result) {
       if (!result.ok && result.error && result.error.indexOf('認証') >= 0) {
-        UI.showToast('ログインの有効期限が切れました。再ログインします…', 'error');
+        // まずトークンのサイレント更新を試みる
+        if (!isRetry) {
+          return new Promise(function(resolve) {
+            Auth.refreshToken();
+            // 3秒待ってから新しいトークンでリトライ
+            setTimeout(function() {
+              resolve(callAPI(action, data, true));
+            }, 3000);
+          });
+        }
+        UI.showToast('ログインの有効期限が切れました。再ログインしてください。', 'error');
         Auth.logout();
         setTimeout(function() { location.reload(); }, 2000);
       }
