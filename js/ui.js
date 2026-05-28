@@ -45,10 +45,11 @@ var UI = (function() {
     toast.textContent = msg;
     container.appendChild(toast);
     setTimeout(function() { toast.classList.add('toast-show'); }, 10);
+    var duration = type === 'error' ? 5000 : 3000;
     setTimeout(function() {
       toast.classList.remove('toast-show');
       setTimeout(function() { toast.remove(); }, 300);
-    }, 3000);
+    }, duration);
   }
 
   // ============================================================
