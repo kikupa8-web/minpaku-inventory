@@ -163,6 +163,43 @@ var UI = (function() {
     return sorted;
   }
 
+  // ヘルパー：類似品グルーピング
+  function longestCommonSub(a, b) {
+    if (!a || !b) return '';
+    var best = '';
+    for (var i = 0; i < a.length; i++) {
+      for (var len = 2; len <= a.length - i; len++) {
+        var sub = a.substring(i, i + len);
+        if (sub.length > best.length && b.indexOf(sub) >= 0) best = sub;
+      }
+    }
+    return best;
+  }
+
+  function smartGroupSort(items, nameKey) {
+    if (items.length <= 1) return { items: items.slice(), breaks: [] };
+    var names = items.map(function(it) { return it[nameKey] || ''; });
+    var keys = names.map(function(name, i) {
+      var bestKey = '';
+      for (var j = 0; j < names.length; j++) {
+        if (i === j) continue;
+        var common = longestCommonSub(name, names[j]);
+        if (common.length > bestKey.length) bestKey = common;
+      }
+      return bestKey.length >= 2 ? bestKey : name;
+    });
+    var indexed = items.map(function(it, i) { return { item: it, key: keys[i], name: names[i] }; });
+    indexed.sort(function(a, b) {
+      if (a.key !== b.key) return a.key.localeCompare(b.key, 'ja');
+      return a.name.localeCompare(b.name, 'ja');
+    });
+    var breaks = [];
+    for (var i = 1; i < indexed.length; i++) {
+      if (indexed[i].key !== indexed[i - 1].key) breaks.push(i);
+    }
+    return { items: indexed.map(function(x) { return x.item; }), breaks: breaks };
+  }
+
   // ============================================================
   // 折りたたみ・並び替え操作
   // ============================================================
@@ -258,7 +295,7 @@ var UI = (function() {
     html += '<div class="sort-bar">'
       + '<label>並び替え</label>'
       + '<select class="sort-select" onchange="UI.setStockSort(this.value)">'
-      + '<option value="name-asc"' + (stockSortKey==='name-asc'?' selected':'') + '>品名順</option>'
+      + '<option value="name-asc"' + (stockSortKey==='name-asc'?' selected':'') + '>類似品まとめ</option>'
       + '<option value="stock-asc"' + (stockSortKey==='stock-asc'?' selected':'') + '>在庫少ない順</option>'
       + '<option value="stock-desc"' + (stockSortKey==='stock-desc'?' selected':'') + '>在庫多い順</option>'
       + '<option value="status"' + (stockSortKey==='status'?' selected':'') + '>ステータス順</option>'
@@ -272,7 +309,15 @@ var UI = (function() {
       var result = groupByCategory(stocks, 'category');
 
       result.order.forEach(function(catName) {
-        var items = sortStockItems(result.groups[catName], stockSortKey);
+        var catItems = result.groups[catName];
+        var items, breakSet = {};
+        if (stockSortKey === 'name-asc') {
+          var sg = smartGroupSort(catItems, 'itemName');
+          items = sg.items;
+          sg.breaks.forEach(function(b) { breakSet[b] = true; });
+        } else {
+          items = sortStockItems(catItems, stockSortKey);
+        }
         var isCollapsed = !!collapsedStockCats[catName];
         var shortage = items.filter(function(s){ return s.status === '要補充'; }).length;
         var low = items.filter(function(s){ return s.status === '残り少'; }).length;
@@ -290,9 +335,10 @@ var UI = (function() {
           + '</div></div>'
           + '<div class="cat-body' + (isCollapsed ? ' collapsed' : '') + '">';
 
-        items.forEach(function(s) {
+        items.forEach(function(s, idx) {
           var rowClass = s.status === '要補充' ? 'row-shortage' : (s.status === '残り少' ? 'row-low' : 'row-ok');
-          html += '<div class="stock-row ' + rowClass + '">'
+          var gapClass = breakSet[idx] ? ' item-group-gap' : '';
+          html += '<div class="stock-row ' + rowClass + gapClass + '">'
             + '<div class="stock-info">'
             + '<div class="stock-name">' + esc(s.itemName) + '</div>'
             + '<div class="stock-meta">最低 ' + s.minimum + ' ／ ' + esc(s.status) + '</div>'
@@ -525,13 +571,13 @@ var UI = (function() {
     if (items.length === 0) {
       html += '<p class="settings-empty">品目がまだ登録されていません</p>';
     } else {
-      var sortedItems = items.slice().sort(function(a,b) {
-        return (a.name||'').localeCompare(b.name||'', 'ja');
-      });
-      var result = groupByCategory(sortedItems, 'category');
+      var result = groupByCategory(items, 'category');
 
       result.order.forEach(function(catName) {
-        var catItems = result.groups[catName];
+        var sg = smartGroupSort(result.groups[catName], 'name');
+        var catItems = sg.items;
+        var breakSet = {};
+        sg.breaks.forEach(function(b) { breakSet[b] = true; });
         var isCollapsed = !!collapsedSettingsCats[catName];
 
         html += '<div class="cat-group">'
@@ -543,8 +589,8 @@ var UI = (function() {
           + '</div></div>'
           + '<div class="cat-body' + (isCollapsed ? ' collapsed' : '') + '">';
 
-        catItems.forEach(function(it) {
-          html += renderItemCard(it);
+        catItems.forEach(function(it, idx) {
+          html += (breakSet[idx] ? '<div class="item-group-gap"></div>' : '') + renderItemCard(it);
         });
         html += '</div></div>';
       });
