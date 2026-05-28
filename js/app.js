@@ -358,56 +358,6 @@ var App = (function() {
     });
   }
 
-  function openAllEditPanels() {
-    var panels = document.querySelectorAll('.stock-edit-panel');
-    panels.forEach(function(p) { p.style.display = 'block'; });
-    var openBtn = document.getElementById('bulk-edit-open');
-    var actions = document.getElementById('bulk-edit-actions');
-    if (openBtn) openBtn.style.display = 'none';
-    if (actions) actions.style.display = 'flex';
-  }
-
-  function closeAllEditPanels() {
-    var panels = document.querySelectorAll('.stock-edit-panel');
-    panels.forEach(function(p) { p.style.display = 'none'; });
-    var openBtn = document.getElementById('bulk-edit-open');
-    var actions = document.getElementById('bulk-edit-actions');
-    if (openBtn) openBtn.style.display = '';
-    if (actions) actions.style.display = 'none';
-  }
-
-  function bulkSaveEditStock() {
-    var panels = document.querySelectorAll('.stock-edit-panel');
-    var edits = [];
-    panels.forEach(function(p) {
-      if (p.style.display === 'none') return;
-      var pid = p.dataset.pid;
-      var iid = p.dataset.iid;
-      if (!pid || !iid) return;
-      var key = pid + '-' + iid;
-      var minEl = document.getElementById('stock-edit-min-' + key);
-      var curEl = document.getElementById('stock-edit-cur-' + key);
-      if (minEl && curEl) {
-        edits.push({ propertyId: pid, itemId: iid, minimum: Number(minEl.value), current: Number(curEl.value) });
-      }
-    });
-    if (edits.length === 0) { UI.showToast('変更する項目がありません', 'error'); return; }
-
-    UI.showLoading();
-    Api.bulkEditStockRecords({ edits: edits }).then(function(result) {
-      if (result.ok) {
-        UI.showToast(result.data.updated + '件 更新しました', 'success');
-        return refreshData();
-      } else {
-        UI.showToast(result.error, 'error');
-      }
-    }).catch(function() {
-      UI.showToast('通信エラーです', 'error');
-    }).finally(function() {
-      UI.hideLoading();
-    });
-  }
-
   function removeStockRecord(propertyId, itemId, itemName) {
     if (!confirm('「' + itemName + '」をこの物件から外しますか？')) return;
     UI.showLoading();
@@ -585,8 +535,7 @@ var App = (function() {
     showAddStockForm: showAddStockForm, hideAddStockForm: hideAddStockForm,
     addStockRecord: addStockRecord, bulkAddStockRecords: bulkAddStockRecords,
     showEditStock: showEditStock, saveEditStock: saveEditStock,
-    openAllEditPanels: openAllEditPanels, closeAllEditPanels: closeAllEditPanels,
-    bulkSaveEditStock: bulkSaveEditStock, removeStockRecord: removeStockRecord,
+    removeStockRecord: removeStockRecord,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
     deleteProperty: deleteProperty,

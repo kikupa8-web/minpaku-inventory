@@ -304,16 +304,6 @@ var UI = (function() {
       + '<button class="btn-expand-all" onclick="UI.toggleAllStockCats()">全開閉</button>'
       + '</div>';
 
-    // まとめて編集ボタン（管理者のみ）
-    if (isAdmin && stocks.length > 0) {
-      html += '<div class="bulk-edit-bar">'
-        + '<button class="action-btn btn-bulk-edit" id="bulk-edit-open" onclick="App.openAllEditPanels()">📝 まとめて編集</button>'
-        + '<div id="bulk-edit-actions" style="display:none;" class="bulk-edit-actions">'
-        + '<button class="action-btn" onclick="App.bulkSaveEditStock()">💾 すべて保存</button>'
-        + '<button class="action-btn action-btn-cancel" onclick="App.closeAllEditPanels()">閉じる</button>'
-        + '</div></div>';
-    }
-
     if (stocks.length === 0) {
       html += '<div class="empty-msg">この物件の在庫データがありません</div>';
     } else {
