@@ -399,6 +399,14 @@ body {
 }
 .action-btn-cancel:hover { background: #777; }
 
+/* 購入先セレクト＋手入力 */
+.supplier-custom {
+  width: 100%; padding: 8px 10px; margin-top: 6px;
+  font-size: 15px; font-family: var(--font);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+  background: var(--color-white);
+}
+
 /* 在庫タブ：品目追加エリア */
 .stock-add-area { margin-top: 12px; }
 .stock-add-btn { width: 100%; text-align: center; }

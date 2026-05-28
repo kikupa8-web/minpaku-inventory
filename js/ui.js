@@ -6,6 +6,7 @@ var UI = (function() {
   var collapsedSettingsCats = {};
   var stockSortKey = 'name-asc';
   var CAT_ORDER = ['アメニティ', '消耗品', 'リネン', '備品'];
+  var SUPPLIER_OPTIONS = ['Amazon', '楽天', 'スーパー', 'ニトリ', '無印良品'];
 
   // ============================================================
   // 同期ステータス
@@ -606,7 +607,7 @@ var UI = (function() {
       + '<div class="form-group"><label>単位</label><input type="text" id="new-item-unit" value="個"></div>'
       + '<div class="form-group"><label>発注単位数</label><input type="number" id="new-item-orderqty" value="1" min="1"></div>'
       + '<div class="form-group"><label>単価(円)</label><input type="number" id="new-item-price" value="0" min="0"></div>'
-      + '<div class="form-group"><label>購入先</label><input type="text" id="new-item-supplier"></div>'
+      + '<div class="form-group"><label>購入先</label>' + renderSupplierSelect('new-item-supplier', 'new-item-supplier-custom', '') + '</div>'
       + '<div class="form-group"><label>購入先URL</label><input type="url" id="new-item-url"></div>'
       + '<div class="form-group"><label>備考</label><input type="text" id="new-item-note" placeholder="例: 50個入"></div>'
       + '<button class="action-btn" onclick="App.addItem()">品目を追加</button>'
@@ -689,7 +690,7 @@ var UI = (function() {
       + '<div class="form-group"><label>単位</label><input type="text" id="edit-item-unit-' + safeId + '" value="' + esc(it.unit || '個') + '"></div>'
       + '<div class="form-group"><label>発注単位数</label><input type="number" id="edit-item-oq-' + safeId + '" value="' + (it.orderQty || 1) + '" min="1"></div>'
       + '<div class="form-group"><label>単価(円)</label><input type="number" id="edit-item-price-' + safeId + '" value="' + (it.price || 0) + '" min="0"></div>'
-      + '<div class="form-group"><label>購入先</label><input type="text" id="edit-item-sup-' + safeId + '" value="' + esc(it.supplier || '') + '"></div>'
+      + '<div class="form-group"><label>購入先</label>' + renderSupplierSelect('edit-item-sup-' + safeId, 'edit-item-sup-custom-' + safeId, it.supplier || '') + '</div>'
       + '<div class="form-group"><label>購入先URL</label><input type="url" id="edit-item-url-' + safeId + '" value="' + esc(it.supplierUrl || '') + '"></div>'
       + '<div class="form-group"><label>備考</label><input type="text" id="edit-item-note-' + safeId + '" value="' + esc(it.note || '') + '"></div>'
       + '<div class="mgmt-edit-buttons">'
@@ -741,6 +742,40 @@ var UI = (function() {
     return esc(str).replace(/'/g, "\\'");
   }
 
+  // 購入先セレクト
+  function renderSupplierSelect(selectId, customId, currentValue) {
+    var isPreset = !currentValue || SUPPLIER_OPTIONS.indexOf(currentValue) >= 0;
+    var html = '<select id="' + selectId + '" class="property-select" onchange="UI.onSupplierChange(\'' + selectId + '\',\'' + customId + '\')">'
+      + '<option value="">未選択</option>';
+    SUPPLIER_OPTIONS.forEach(function(s) {
+      html += '<option value="' + s + '"' + (currentValue === s ? ' selected' : '') + '>' + s + '</option>';
+    });
+    html += '<option value="__other__"' + (!isPreset && currentValue ? ' selected' : '') + '>その他（手入力）</option></select>'
+      + '<input type="text" id="' + customId + '" class="supplier-custom" style="' + (isPreset || !currentValue ? 'display:none;' : '') + '" placeholder="購入先を入力" value="' + (!isPreset ? esc(currentValue || '') : '') + '">';
+    return html;
+  }
+
+  function onSupplierChange(selectId, customId) {
+    var sel = document.getElementById(selectId);
+    var inp = document.getElementById(customId);
+    if (sel.value === '__other__') {
+      inp.style.display = 'block';
+      inp.focus();
+    } else {
+      inp.style.display = 'none';
+      inp.value = '';
+    }
+  }
+
+  function getSupplierValue(selectId, customId) {
+    var sel = document.getElementById(selectId);
+    if (!sel) return '';
+    if (sel.value === '__other__') {
+      return document.getElementById(customId).value.trim();
+    }
+    return sel.value;
+  }
+
   return {
     setSyncStatus: setSyncStatus, updatePendingBadge: updatePendingBadge,
     showToast: showToast, showLoading: showLoading, hideLoading: hideLoading,
@@ -751,6 +786,7 @@ var UI = (function() {
     renderHistoryTab: renderHistoryTab, renderSettingsTab: renderSettingsTab,
     toggleStockCat: toggleStockCat, toggleSettingsCat: toggleSettingsCat,
     toggleAllStockCats: toggleAllStockCats, toggleAllSettingsCats: toggleAllSettingsCats,
-    setStockSort: setStockSort
+    setStockSort: setStockSort,
+    onSupplierChange: onSupplierChange, getSupplierValue: getSupplierValue
   };
 })();

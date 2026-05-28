@@ -341,7 +341,7 @@ var App = (function() {
       unit: document.getElementById('edit-item-unit-' + itemId).value.trim(),
       orderQty: document.getElementById('edit-item-oq-' + itemId).value,
       price: document.getElementById('edit-item-price-' + itemId).value,
-      supplier: document.getElementById('edit-item-sup-' + itemId).value.trim(),
+      supplier: UI.getSupplierValue('edit-item-sup-' + itemId, 'edit-item-sup-custom-' + itemId),
       supplierUrl: document.getElementById('edit-item-url-' + itemId).value.trim(),
       note: document.getElementById('edit-item-note-' + itemId).value.trim()
     }).then(function(result) {
@@ -452,7 +452,7 @@ var App = (function() {
       unit: document.getElementById('new-item-unit').value.trim(),
       orderQty: document.getElementById('new-item-orderqty').value,
       price: document.getElementById('new-item-price').value,
-      supplier: document.getElementById('new-item-supplier').value.trim(),
+      supplier: UI.getSupplierValue('new-item-supplier', 'new-item-supplier-custom'),
       supplierUrl: document.getElementById('new-item-url').value.trim(),
       note: document.getElementById('new-item-note').value.trim()
     }).then(function(result) {
