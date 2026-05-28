@@ -385,9 +385,8 @@ var UI = (function() {
         + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
         + '<div class="form-group"><label>カテゴリで絞り込み</label><select id="stock-add-cat-filter" class="property-select" onchange="UI.filterStockAddItems()"><option value="">すべて</option><option>アメニティ</option><option>消耗品</option><option>リネン</option><option>備品</option></select></div>'
         + '<div class="form-group"><label>追加する品目を選択 <span class="bulk-select-all"><label><input type="checkbox" id="stock-add-all" onchange="UI.toggleAllStockAddItems(this.checked)"> 全選択</label></span></label>'
+        + '<div class="stock-add-col-header"><span class="stock-add-col-name">品目名</span><span class="stock-add-col-num">最低数</span><span class="stock-add-col-num">初期在庫</span></div>'
         + '<div id="stock-add-checklist" class="stock-add-checklist"></div></div>'
-        + '<div class="form-group"><label>最低数（これを下回るとアラート）</label><input type="number" id="stock-add-min" value="5" min="0"></div>'
-        + '<div class="form-group"><label>初期在庫数</label><input type="number" id="stock-add-initial" value="0" min="0"></div>'
         + '<div class="mgmt-edit-buttons">'
         + '<button class="action-btn" onclick="App.bulkAddStockRecords()">まとめて追加</button>'
         + '<button class="action-btn action-btn-cancel" onclick="App.hideAddStockForm()">キャンセル</button>'
@@ -774,10 +773,14 @@ var UI = (function() {
       html = '<div class="stock-add-empty">' + (filterCat ? 'このカテゴリの未登録品目はありません' : 'すべての品目が登録済みです') + '</div>';
     } else {
       available.forEach(function(it) {
-        html += '<label class="stock-add-check-item">'
+        html += '<div class="stock-add-check-item">'
+          + '<label class="stock-add-check-label">'
           + '<input type="checkbox" value="' + it.itemId + '" class="stock-add-check">'
           + '<span>' + esc(it.name) + (filterCat ? '' : ' <small>(' + esc(it.category) + ')</small>') + '</span>'
-          + '</label>';
+          + '</label>'
+          + '<input type="number" class="stock-add-item-min" data-id="' + it.itemId + '" value="5" min="0" placeholder="最低">'
+          + '<input type="number" class="stock-add-item-init" data-id="' + it.itemId + '" value="0" min="0" placeholder="初期">'
+          + '</div>';
       });
     }
     container.innerHTML = html;
@@ -792,9 +795,18 @@ var UI = (function() {
 
   function getCheckedStockAddItems() {
     var cbs = document.querySelectorAll('#stock-add-checklist .stock-add-check:checked');
-    var ids = [];
-    cbs.forEach(function(cb) { ids.push(cb.value); });
-    return ids;
+    var items = [];
+    cbs.forEach(function(cb) {
+      var id = cb.value;
+      var minEl = document.querySelector('.stock-add-item-min[data-id="' + id + '"]');
+      var initEl = document.querySelector('.stock-add-item-init[data-id="' + id + '"]');
+      items.push({
+        itemId: id,
+        minimum: minEl ? minEl.value : '5',
+        initial: initEl ? initEl.value : '0'
+      });
+    });
+    return items;
   }
 
   // 購入先セレクト

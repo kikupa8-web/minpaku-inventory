@@ -305,19 +305,17 @@ var App = (function() {
   }
 
   function bulkAddStockRecords() {
-    var itemIds = UI.getCheckedStockAddItems();
-    if (itemIds.length === 0) { UI.showToast('品目を選択してください', 'error'); return; }
+    var checkedItems = UI.getCheckedStockAddItems();
+    if (checkedItems.length === 0) { UI.showToast('品目を選択してください', 'error'); return; }
     var pid = Store.getSelectedPropertyId();
-    var minimum = document.getElementById('stock-add-min').value;
-    var initial = document.getElementById('stock-add-initial').value;
 
     UI.showLoading();
-    var promises = itemIds.map(function(itemId) {
+    var promises = checkedItems.map(function(item) {
       return Api.addStockRecord({
         propertyId: pid,
-        itemId: itemId,
-        minimum: minimum,
-        initial: initial
+        itemId: item.itemId,
+        minimum: item.minimum,
+        initial: item.initial
       });
     });
 
