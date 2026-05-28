@@ -1,4 +1,4 @@
-var CACHE_NAME = 'minpaku-v1';
+var CACHE_NAME = 'minpaku-v2';
 var STATIC_ASSETS = [
   './',
   './index.html',
@@ -41,17 +41,16 @@ self.addEventListener('fetch', function(event) {
   if (event.request.method === 'POST') return;
 
   if (url.origin === location.origin) {
+    // ネットワーク優先：常に最新版を取得、オフライン時のみキャッシュ使用
     event.respondWith(
-      caches.match(event.request).then(function(cached) {
-        var fetchPromise = fetch(event.request).then(function(response) {
-          if (response.ok) {
-            var clone = response.clone();
-            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
-          }
-          return response;
-        }).catch(function() { return cached; });
-
-        return cached || fetchPromise;
+      fetch(event.request).then(function(response) {
+        if (response.ok) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+        }
+        return response;
+      }).catch(function() {
+        return caches.match(event.request);
       })
     );
   } else {
