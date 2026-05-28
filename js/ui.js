@@ -304,6 +304,16 @@ var UI = (function() {
       + '<button class="btn-expand-all" onclick="UI.toggleAllStockCats()">全開閉</button>'
       + '</div>';
 
+    // まとめて編集ボタン（管理者のみ）
+    if (isAdmin && stocks.length > 0) {
+      html += '<div class="bulk-edit-bar">'
+        + '<button class="action-btn btn-bulk-edit" id="bulk-edit-open" onclick="App.openAllEditPanels()">📝 まとめて編集</button>'
+        + '<div id="bulk-edit-actions" style="display:none;" class="bulk-edit-actions">'
+        + '<button class="action-btn" onclick="App.bulkSaveEditStock()">💾 すべて保存</button>'
+        + '<button class="action-btn action-btn-cancel" onclick="App.closeAllEditPanels()">閉じる</button>'
+        + '</div></div>';
+    }
+
     if (stocks.length === 0) {
       html += '<div class="empty-msg">この物件の在庫データがありません</div>';
     } else {
@@ -353,7 +363,7 @@ var UI = (function() {
             + (isAdmin ? '<button class="btn-stock-edit" aria-label="編集" onclick="App.showEditStock(\'' + s.propertyId + '\',\'' + s.itemId + '\')">✏️</button>' : '')
             + (isAdmin ? '<button class="btn-stock-remove" aria-label="削除" onclick="App.removeStockRecord(\'' + s.propertyId + '\',\'' + s.itemId + '\',\'' + escAttr(s.itemName) + '\')">🗑️</button>' : '')
             + '</div></div>'
-            + (isAdmin ? '<div class="stock-edit-panel" id="stock-edit-' + editKey + '" style="display:none;">'
+            + (isAdmin ? '<div class="stock-edit-panel" id="stock-edit-' + editKey + '" data-pid="' + s.propertyId + '" data-iid="' + s.itemId + '" style="display:none;">'
               + '<div class="stock-edit-row">'
               + '<div class="form-group"><label>最低数</label><input type="number" id="stock-edit-min-' + editKey + '" value="' + s.minimum + '" min="0"></div>'
               + '<div class="form-group"><label>在庫数</label><input type="number" id="stock-edit-cur-' + editKey + '" value="' + s.current + '" min="0"></div>'
@@ -374,11 +384,12 @@ var UI = (function() {
         + '<button class="action-btn stock-add-btn" onclick="App.showAddStockForm()">＋ この物件に品目を追加</button>'
         + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
         + '<div class="form-group"><label>カテゴリで絞り込み</label><select id="stock-add-cat-filter" class="property-select" onchange="UI.filterStockAddItems()"><option value="">すべて</option><option>アメニティ</option><option>消耗品</option><option>リネン</option><option>備品</option></select></div>'
-        + '<div class="form-group"><label>品目を選択</label><select id="stock-add-item" class="property-select"></select></div>'
+        + '<div class="form-group"><label>追加する品目を選択 <span class="bulk-select-all"><label><input type="checkbox" id="stock-add-all" onchange="UI.toggleAllStockAddItems(this.checked)"> 全選択</label></span></label>'
+        + '<div id="stock-add-checklist" class="stock-add-checklist"></div></div>'
         + '<div class="form-group"><label>最低数（これを下回るとアラート）</label><input type="number" id="stock-add-min" value="5" min="0"></div>'
         + '<div class="form-group"><label>初期在庫数</label><input type="number" id="stock-add-initial" value="0" min="0"></div>'
         + '<div class="mgmt-edit-buttons">'
-        + '<button class="action-btn" onclick="App.addStockRecord()">追加</button>'
+        + '<button class="action-btn" onclick="App.bulkAddStockRecords()">まとめて追加</button>'
         + '<button class="action-btn action-btn-cancel" onclick="App.hideAddStockForm()">キャンセル</button>'
         + '</div></div></div>';
     }
@@ -746,8 +757,8 @@ var UI = (function() {
   // 品目追加フォーム：カテゴリ絞り込み
   function filterStockAddItems() {
     var catFilter = document.getElementById('stock-add-cat-filter');
-    var sel = document.getElementById('stock-add-item');
-    if (!catFilter || !sel) return;
+    var container = document.getElementById('stock-add-checklist');
+    if (!catFilter || !container) return;
     var filterCat = catFilter.value;
     var pid = Store.getSelectedPropertyId();
     var existingItemIds = {};
@@ -758,17 +769,32 @@ var UI = (function() {
       if (filterCat && it.category !== filterCat) return false;
       return true;
     });
-    sel.innerHTML = '';
+    var html = '';
     if (available.length === 0) {
-      sel.innerHTML = '<option value="">' + (filterCat ? 'このカテゴリの未登録品目はありません' : 'すべての品目が登録済みです') + '</option>';
+      html = '<div class="stock-add-empty">' + (filterCat ? 'このカテゴリの未登録品目はありません' : 'すべての品目が登録済みです') + '</div>';
     } else {
       available.forEach(function(it) {
-        var opt = document.createElement('option');
-        opt.value = it.itemId;
-        opt.textContent = it.name + (filterCat ? '' : '（' + it.category + '）');
-        sel.appendChild(opt);
+        html += '<label class="stock-add-check-item">'
+          + '<input type="checkbox" value="' + it.itemId + '" class="stock-add-check">'
+          + '<span>' + esc(it.name) + (filterCat ? '' : ' <small>(' + esc(it.category) + ')</small>') + '</span>'
+          + '</label>';
       });
     }
+    container.innerHTML = html;
+    var allCb = document.getElementById('stock-add-all');
+    if (allCb) allCb.checked = false;
+  }
+
+  function toggleAllStockAddItems(checked) {
+    var cbs = document.querySelectorAll('#stock-add-checklist .stock-add-check');
+    cbs.forEach(function(cb) { cb.checked = checked; });
+  }
+
+  function getCheckedStockAddItems() {
+    var cbs = document.querySelectorAll('#stock-add-checklist .stock-add-check:checked');
+    var ids = [];
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+    return ids;
   }
 
   // 購入先セレクト
@@ -817,6 +843,7 @@ var UI = (function() {
     toggleAllStockCats: toggleAllStockCats, toggleAllSettingsCats: toggleAllSettingsCats,
     setStockSort: setStockSort,
     filterStockAddItems: filterStockAddItems,
+    toggleAllStockAddItems: toggleAllStockAddItems, getCheckedStockAddItems: getCheckedStockAddItems,
     onSupplierChange: onSupplierChange, getSupplierValue: getSupplierValue
   };
 })();

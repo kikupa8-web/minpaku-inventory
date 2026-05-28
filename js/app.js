@@ -304,6 +304,39 @@ var App = (function() {
     });
   }
 
+  function bulkAddStockRecords() {
+    var itemIds = UI.getCheckedStockAddItems();
+    if (itemIds.length === 0) { UI.showToast('品目を選択してください', 'error'); return; }
+    var pid = Store.getSelectedPropertyId();
+    var minimum = document.getElementById('stock-add-min').value;
+    var initial = document.getElementById('stock-add-initial').value;
+
+    UI.showLoading();
+    var promises = itemIds.map(function(itemId) {
+      return Api.addStockRecord({
+        propertyId: pid,
+        itemId: itemId,
+        minimum: minimum,
+        initial: initial
+      });
+    });
+
+    Promise.all(promises).then(function(results) {
+      var ok = results.filter(function(r) { return r.ok; }).length;
+      var fail = results.length - ok;
+      if (fail === 0) {
+        UI.showToast(ok + '件 追加しました', 'success');
+      } else {
+        UI.showToast(ok + '件成功 / ' + fail + '件失敗', 'error');
+      }
+      return refreshData();
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
+    });
+  }
+
   function showEditStock(propertyId, itemId) {
     var el = document.getElementById('stock-edit-' + propertyId + '-' + itemId);
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -326,6 +359,61 @@ var App = (function() {
       } else {
         UI.showToast(result.error, 'error');
       }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
+    });
+  }
+
+  function openAllEditPanels() {
+    var panels = document.querySelectorAll('.stock-edit-panel');
+    panels.forEach(function(p) { p.style.display = 'block'; });
+    var openBtn = document.getElementById('bulk-edit-open');
+    var actions = document.getElementById('bulk-edit-actions');
+    if (openBtn) openBtn.style.display = 'none';
+    if (actions) actions.style.display = 'flex';
+  }
+
+  function closeAllEditPanels() {
+    var panels = document.querySelectorAll('.stock-edit-panel');
+    panels.forEach(function(p) { p.style.display = 'none'; });
+    var openBtn = document.getElementById('bulk-edit-open');
+    var actions = document.getElementById('bulk-edit-actions');
+    if (openBtn) openBtn.style.display = '';
+    if (actions) actions.style.display = 'none';
+  }
+
+  function bulkSaveEditStock() {
+    var panels = document.querySelectorAll('.stock-edit-panel');
+    var edits = [];
+    panels.forEach(function(p) {
+      if (p.style.display === 'none') return;
+      var pid = p.dataset.pid;
+      var iid = p.dataset.iid;
+      if (!pid || !iid) return;
+      var key = pid + '-' + iid;
+      var minEl = document.getElementById('stock-edit-min-' + key);
+      var curEl = document.getElementById('stock-edit-cur-' + key);
+      if (minEl && curEl) {
+        edits.push({ propertyId: pid, itemId: iid, minimum: Number(minEl.value), current: Number(curEl.value) });
+      }
+    });
+    if (edits.length === 0) { UI.showToast('変更する項目がありません', 'error'); return; }
+
+    UI.showLoading();
+    var promises = edits.map(function(e) {
+      return Api.editStockRecord(e);
+    });
+    Promise.all(promises).then(function(results) {
+      var ok = results.filter(function(r) { return r.ok; }).length;
+      var fail = results.length - ok;
+      if (fail === 0) {
+        UI.showToast(ok + '件 更新しました', 'success');
+      } else {
+        UI.showToast(ok + '件成功 / ' + fail + '件失敗', 'error');
+      }
+      return refreshData();
     }).catch(function() {
       UI.showToast('通信エラーです', 'error');
     }).finally(function() {
@@ -508,8 +596,10 @@ var App = (function() {
     init: init, onLoginSuccess: onLoginSuccess, refreshData: refreshData,
     handleStock: handleStock, exportCSV: exportCSV, sendOrderEmail: sendOrderEmail,
     showAddStockForm: showAddStockForm, hideAddStockForm: hideAddStockForm,
-    addStockRecord: addStockRecord, showEditStock: showEditStock, saveEditStock: saveEditStock,
-    removeStockRecord: removeStockRecord,
+    addStockRecord: addStockRecord, bulkAddStockRecords: bulkAddStockRecords,
+    showEditStock: showEditStock, saveEditStock: saveEditStock,
+    openAllEditPanels: openAllEditPanels, closeAllEditPanels: closeAllEditPanels,
+    bulkSaveEditStock: bulkSaveEditStock, removeStockRecord: removeStockRecord,
     addProperty: addProperty, showEditProperty: showEditProperty,
     cancelEditProperty: cancelEditProperty, saveEditProperty: saveEditProperty,
     deleteProperty: deleteProperty,
