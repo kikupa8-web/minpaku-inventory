@@ -360,6 +360,7 @@ var UI = (function() {
       html += '<div id="stock-add-area" class="stock-add-area">'
         + '<button class="action-btn stock-add-btn" onclick="App.showAddStockForm()">＋ この物件に品目を追加</button>'
         + '<div id="stock-add-form" style="display:none;" class="stock-add-form">'
+        + '<div class="form-group"><label>カテゴリで絞り込み</label><select id="stock-add-cat-filter" class="property-select" onchange="UI.filterStockAddItems()"><option value="">すべて</option><option>アメニティ</option><option>消耗品</option><option>リネン</option><option>備品</option></select></div>'
         + '<div class="form-group"><label>品目を選択</label><select id="stock-add-item" class="property-select"></select></div>'
         + '<div class="form-group"><label>最低数（これを下回るとアラート）</label><input type="number" id="stock-add-min" value="5" min="0"></div>'
         + '<div class="form-group"><label>初期在庫数</label><input type="number" id="stock-add-initial" value="0" min="0"></div>'
@@ -373,25 +374,7 @@ var UI = (function() {
 
     // 品目セレクトボックスを埋める（未登録品目のみ）
     if (isAdmin) {
-      var sel = document.getElementById('stock-add-item');
-      if (sel) {
-        var pid = Store.getSelectedPropertyId();
-        var existingItemIds = {};
-        Store.getStocksForProperty(pid).forEach(function(s) { existingItemIds[s.itemId] = true; });
-        var allItems = Store.getItems();
-        var available = allItems.filter(function(it) { return !existingItemIds[it.itemId]; });
-        if (available.length === 0) {
-          sel.innerHTML = '<option value="">すべての品目が登録済みです</option>';
-        } else {
-          sel.innerHTML = '';
-          available.forEach(function(it) {
-            var opt = document.createElement('option');
-            opt.value = it.itemId;
-            opt.textContent = it.name + '（' + it.category + '）';
-            sel.appendChild(opt);
-          });
-        }
-      }
+      filterStockAddItems();
     }
   }
 
@@ -742,6 +725,34 @@ var UI = (function() {
     return esc(str).replace(/'/g, "\\'");
   }
 
+  // 品目追加フォーム：カテゴリ絞り込み
+  function filterStockAddItems() {
+    var catFilter = document.getElementById('stock-add-cat-filter');
+    var sel = document.getElementById('stock-add-item');
+    if (!catFilter || !sel) return;
+    var filterCat = catFilter.value;
+    var pid = Store.getSelectedPropertyId();
+    var existingItemIds = {};
+    Store.getStocksForProperty(pid).forEach(function(s) { existingItemIds[s.itemId] = true; });
+    var allItems = Store.getItems();
+    var available = allItems.filter(function(it) {
+      if (existingItemIds[it.itemId]) return false;
+      if (filterCat && it.category !== filterCat) return false;
+      return true;
+    });
+    sel.innerHTML = '';
+    if (available.length === 0) {
+      sel.innerHTML = '<option value="">' + (filterCat ? 'このカテゴリの未登録品目はありません' : 'すべての品目が登録済みです') + '</option>';
+    } else {
+      available.forEach(function(it) {
+        var opt = document.createElement('option');
+        opt.value = it.itemId;
+        opt.textContent = it.name + (filterCat ? '' : '（' + it.category + '）');
+        sel.appendChild(opt);
+      });
+    }
+  }
+
   // 購入先セレクト
   function renderSupplierSelect(selectId, customId, currentValue) {
     var isPreset = !currentValue || SUPPLIER_OPTIONS.indexOf(currentValue) >= 0;
@@ -787,6 +798,7 @@ var UI = (function() {
     toggleStockCat: toggleStockCat, toggleSettingsCat: toggleSettingsCat,
     toggleAllStockCats: toggleAllStockCats, toggleAllSettingsCats: toggleAllSettingsCats,
     setStockSort: setStockSort,
+    filterStockAddItems: filterStockAddItems,
     onSupplierChange: onSupplierChange, getSupplierValue: getSupplierValue
   };
 })();
