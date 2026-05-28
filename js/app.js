@@ -96,13 +96,15 @@ var App = (function() {
   }
 
   function refreshData() {
-    Api.getInitialData().then(function(result) {
+    return Api.getInitialData().then(function(result) {
       if (result.ok) {
         Auth.setUser(result.data.user);
         Store.setData(result.data);
-        UI.renderStockTab();
+        // 今見ているタブを再描画
+        UI.switchTab(Store.getCurrentTab());
         UI.setSyncStatus('saved');
       }
+      return result;
     });
   }
 
@@ -239,7 +241,6 @@ var App = (function() {
       if (result.ok) {
         UI.showToast('物件を更新しました', 'success');
         refreshData();
-        setTimeout(function() { UI.switchTab('settings'); }, 500);
       } else {
         UI.showToast(result.error, 'error');
       }
@@ -258,7 +259,6 @@ var App = (function() {
       if (result.ok) {
         UI.showToast('物件を削除しました', 'success');
         refreshData();
-        setTimeout(function() { UI.switchTab('settings'); }, 500);
       } else {
         UI.showToast(result.error, 'error');
       }
@@ -334,7 +334,7 @@ var App = (function() {
       note: document.getElementById('edit-item-note-' + itemId).value.trim()
     }).then(function(result) {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('品目を更新しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      if (result.ok) { UI.showToast('品目を更新しました', 'success'); refreshData(); }
       else { UI.showToast(result.error, 'error'); }
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
@@ -343,7 +343,7 @@ var App = (function() {
     UI.showLoading();
     Api.deleteItem(itemId).then(function(result) {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('品目を削除しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      if (result.ok) { UI.showToast('品目を削除しました', 'success'); refreshData(); }
       else { UI.showToast(result.error, 'error'); }
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
@@ -366,7 +366,7 @@ var App = (function() {
       active: document.getElementById('edit-perm-active-' + email).value === 'true'
     }).then(function(result) {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフ情報を更新しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      if (result.ok) { UI.showToast('スタッフ情報を更新しました', 'success'); refreshData(); }
       else { UI.showToast(result.error, 'error'); }
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
@@ -375,7 +375,7 @@ var App = (function() {
     UI.showLoading();
     Api.deletePermission(email).then(function(result) {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフを削除しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      if (result.ok) { UI.showToast('スタッフを削除しました', 'success'); refreshData(); }
       else { UI.showToast(result.error, 'error'); }
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
@@ -389,7 +389,7 @@ var App = (function() {
       role: document.getElementById('new-perm-role').value
     }).then(function(result) {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフを追加しました', 'success'); refreshData(); setTimeout(function(){UI.switchTab('settings');},500); }
+      if (result.ok) { UI.showToast('スタッフを追加しました', 'success'); refreshData(); }
       else { UI.showToast(result.error, 'error'); }
     }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
   }
