@@ -4,7 +4,7 @@ var UI = (function() {
   // ============================================================
   var collapsedStockCats = {};
   var collapsedSettingsCats = {};
-  var stockSortKey = 'name-asc';
+  var stockSortKey = 'status';
   var CAT_ORDER = ['アメニティ', '消耗品', 'リネン', '備品'];
   var SUPPLIER_OPTIONS = ['Amazon', '楽天', 'スーパー', 'ニトリ', '無印良品'];
 
