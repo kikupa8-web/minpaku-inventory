@@ -310,24 +310,18 @@ var App = (function() {
     var pid = Store.getSelectedPropertyId();
 
     UI.showLoading();
-    var promises = checkedItems.map(function(item) {
-      return Api.addStockRecord({
-        propertyId: pid,
-        itemId: item.itemId,
-        minimum: item.minimum,
-        initial: item.initial
-      });
-    });
-
-    Promise.all(promises).then(function(results) {
-      var ok = results.filter(function(r) { return r.ok; }).length;
-      var fail = results.length - ok;
-      if (fail === 0) {
-        UI.showToast(ok + '件 追加しました', 'success');
+    Api.bulkAddStockRecords({
+      propertyId: pid,
+      items: checkedItems
+    }).then(function(result) {
+      if (result.ok) {
+        var msg = result.data.added + '件 追加しました';
+        if (result.data.skipped > 0) msg += '（' + result.data.skipped + '件スキップ）';
+        UI.showToast(msg, 'success');
+        return refreshData();
       } else {
-        UI.showToast(ok + '件成功 / ' + fail + '件失敗', 'error');
+        UI.showToast(result.error, 'error');
       }
-      return refreshData();
     }).catch(function() {
       UI.showToast('通信エラーです', 'error');
     }).finally(function() {
@@ -400,18 +394,13 @@ var App = (function() {
     if (edits.length === 0) { UI.showToast('変更する項目がありません', 'error'); return; }
 
     UI.showLoading();
-    var promises = edits.map(function(e) {
-      return Api.editStockRecord(e);
-    });
-    Promise.all(promises).then(function(results) {
-      var ok = results.filter(function(r) { return r.ok; }).length;
-      var fail = results.length - ok;
-      if (fail === 0) {
-        UI.showToast(ok + '件 更新しました', 'success');
+    Api.bulkEditStockRecords({ edits: edits }).then(function(result) {
+      if (result.ok) {
+        UI.showToast(result.data.updated + '件 更新しました', 'success');
+        return refreshData();
       } else {
-        UI.showToast(ok + '件成功 / ' + fail + '件失敗', 'error');
+        UI.showToast(result.error, 'error');
       }
-      return refreshData();
     }).catch(function() {
       UI.showToast('通信エラーです', 'error');
     }).finally(function() {
