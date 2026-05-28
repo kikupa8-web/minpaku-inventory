@@ -100,11 +100,13 @@ var App = (function() {
       if (result.ok) {
         Auth.setUser(result.data.user);
         Store.setData(result.data);
-        // 今見ているタブを再描画
         UI.switchTab(Store.getCurrentTab());
         UI.setSyncStatus('saved');
       }
       return result;
+    }).catch(function(err) {
+      console.log('refreshData error:', err);
+      UI.setSyncStatus('error');
     });
   }
 
@@ -193,16 +195,16 @@ var App = (function() {
       manager: document.getElementById('new-prop-manager').value.trim(),
       notifyEmail: document.getElementById('new-prop-email').value.trim()
     }).then(function(result) {
-      UI.hideLoading();
       if (result.ok) {
-        UI.showToast('物件を追加しました: ' + result.data.propertyId, 'success');
-        refreshData();
+        UI.showToast('物件を追加しました', 'success');
+        return refreshData();
       } else {
         UI.showToast(result.error, 'error');
       }
     }).catch(function() {
-      UI.hideLoading();
       UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
     });
   }
 
@@ -237,16 +239,16 @@ var App = (function() {
       manager: document.getElementById('edit-manager-' + propertyId).value.trim(),
       notifyEmail: document.getElementById('edit-email-' + propertyId).value.trim()
     }).then(function(result) {
-      UI.hideLoading();
       if (result.ok) {
         UI.showToast('物件を更新しました', 'success');
-        refreshData();
+        return refreshData();
       } else {
         UI.showToast(result.error, 'error');
       }
     }).catch(function() {
-      UI.hideLoading();
       UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
     });
   }
 
@@ -255,16 +257,16 @@ var App = (function() {
 
     UI.showLoading();
     Api.deleteProperty(propertyId).then(function(result) {
-      UI.hideLoading();
       if (result.ok) {
         UI.showToast('物件を削除しました', 'success');
-        refreshData();
+        return refreshData();
       } else {
         UI.showToast(result.error, 'error');
       }
     }).catch(function() {
-      UI.hideLoading();
       UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
     });
   }
 
@@ -289,24 +291,34 @@ var App = (function() {
       minimum: minimum,
       initial: initial
     }).then(function(result) {
-      UI.hideLoading();
       if (result.ok) {
         UI.showToast('品目を物件に追加しました', 'success');
-        refreshData();
+        return refreshData();
       } else {
         UI.showToast(result.error, 'error');
       }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
+    });
   }
 
   function removeStockRecord(propertyId, itemId, itemName) {
     if (!confirm('「' + itemName + '」をこの物件から外しますか？')) return;
     UI.showLoading();
     Api.removeStockRecord(propertyId, itemId).then(function(result) {
+      if (result.ok) {
+        UI.showToast('品目を物件から外しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('品目を物件から外しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
 
   // ============ 品目管理 ============
@@ -333,19 +345,33 @@ var App = (function() {
       supplierUrl: document.getElementById('edit-item-url-' + itemId).value.trim(),
       note: document.getElementById('edit-item-note-' + itemId).value.trim()
     }).then(function(result) {
+      if (result.ok) {
+        UI.showToast('品目を更新しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('品目を更新しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
   function deleteItem(itemId, itemName) {
     if (!confirm('「' + itemName + '」を削除しますか？\n\nこの品目の在庫データもすべて削除されます。')) return;
     UI.showLoading();
     Api.deleteItem(itemId).then(function(result) {
+      if (result.ok) {
+        UI.showToast('品目を削除しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('品目を削除しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
 
   // ============ スタッフ管理 ============
@@ -365,19 +391,33 @@ var App = (function() {
       role: document.getElementById('edit-perm-role-' + email).value,
       active: document.getElementById('edit-perm-active-' + email).value === 'true'
     }).then(function(result) {
+      if (result.ok) {
+        UI.showToast('スタッフ情報を更新しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフ情報を更新しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
   function deletePerm(email, name) {
     if (!confirm('「' + name + '」を削除しますか？\n\nこのスタッフはログインできなくなります。')) return;
     UI.showLoading();
     Api.deletePermission(email).then(function(result) {
+      if (result.ok) {
+        UI.showToast('スタッフを削除しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフを削除しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
   function addPermission() {
     var email = document.getElementById('new-perm-email').value.trim();
@@ -388,10 +428,17 @@ var App = (function() {
       displayName: document.getElementById('new-perm-name').value.trim(),
       role: document.getElementById('new-perm-role').value
     }).then(function(result) {
+      if (result.ok) {
+        UI.showToast('スタッフを追加しました', 'success');
+        return refreshData();
+      } else {
+        UI.showToast(result.error, 'error');
+      }
+    }).catch(function() {
+      UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
       UI.hideLoading();
-      if (result.ok) { UI.showToast('スタッフを追加しました', 'success'); refreshData(); }
-      else { UI.showToast(result.error, 'error'); }
-    }).catch(function() { UI.hideLoading(); UI.showToast('通信エラーです', 'error'); });
+    });
   }
 
   function addItem() {
@@ -409,16 +456,16 @@ var App = (function() {
       supplierUrl: document.getElementById('new-item-url').value.trim(),
       note: document.getElementById('new-item-note').value.trim()
     }).then(function(result) {
-      UI.hideLoading();
       if (result.ok) {
-        UI.showToast('品目を追加しました: ' + result.data.itemId, 'success');
-        refreshData();
+        UI.showToast('品目を追加しました', 'success');
+        return refreshData();
       } else {
         UI.showToast(result.error, 'error');
       }
     }).catch(function() {
-      UI.hideLoading();
       UI.showToast('通信エラーです', 'error');
+    }).finally(function() {
+      UI.hideLoading();
     });
   }
 

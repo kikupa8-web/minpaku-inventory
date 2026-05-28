@@ -1,30 +1,18 @@
 var Api = (function() {
   var PENDING_KEY = 'minpaku_pending';
 
-  function isTokenValid() {
-    var saved = localStorage.getItem('minpaku_token');
-    if (!saved) return false;
-    try {
-      var parsed = JSON.parse(saved);
-      // 残り5分未満なら期限切れ扱い
-      return parsed.exp && parsed.exp > Date.now() + 5 * 60 * 1000;
-    } catch(e) { return false; }
-  }
-
   function callAPI(action, data, isRetry) {
-    // トークン期限チェック（updateStock以外の書き込み操作時）
-    if (!isRetry && !isTokenValid() && action !== 'getInitialData') {
-      UI.showToast('ログインの有効期限が切れました。再ログインしてください。', 'error');
-      setTimeout(function() {
-        Auth.logout();
-        location.reload();
-      }, 2000);
-      return Promise.resolve({ ok: false, error: 'トークン期限切れ' });
+    var token = Auth.getToken();
+    if (!token && action !== 'getInitialData') {
+      UI.showToast('ログインしてください', 'error');
+      Auth.logout();
+      setTimeout(function() { location.reload(); }, 1500);
+      return Promise.resolve({ ok: false, error: 'ログインが必要です' });
     }
 
     var payload = Object.assign({}, data || {}, {
       action: action,
-      idToken: Auth.getToken()
+      idToken: token
     });
 
     return fetch(AppConfig.GAS_URL, {
@@ -39,20 +27,17 @@ var Api = (function() {
     .then(function(result) {
       if (!result.ok && result.error && result.error.indexOf('認証') >= 0) {
         UI.showToast('ログインの有効期限が切れました。再ログインします…', 'error');
-        setTimeout(function() {
-          Auth.logout();
-          location.reload();
-        }, 2000);
+        Auth.logout();
+        setTimeout(function() { location.reload(); }, 2000);
       }
       return result;
     })
     .catch(function(err) {
-      // 1回だけ自動リトライ
       if (!isRetry) {
         return new Promise(function(resolve) {
           setTimeout(function() {
             resolve(callAPI(action, data, true));
-          }, 1500);
+          }, 2000);
         });
       }
       throw err;
